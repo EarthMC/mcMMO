@@ -1,8 +1,6 @@
 package com.gmail.nossr50.skills.herbalism;
 
-import com.gmail.nossr50.config.Config;
-import com.gmail.nossr50.config.experience.ExperienceConfig;
-import com.gmail.nossr50.config.treasure.TreasureConfig;
+import com.gmail.nossr50.config.MainConfig;
 import com.gmail.nossr50.datatypes.experience.XPGainReason;
 import com.gmail.nossr50.datatypes.interactions.NotificationType;
 import com.gmail.nossr50.datatypes.mods.CustomBlock;
@@ -40,7 +38,7 @@ public class HerbalismManager extends SkillManager {
     }
 
     public boolean canBlockCheck() {
-        return !(Config.getInstance().getHerbalismPreventAFK() && getPlayer().isInsideVehicle());
+        return !(MainConfig.getInstance().getHerbalismPreventAFK() && getPlayer().isInsideVehicle());
     }
 
     public boolean canGreenThumbBlock(BlockState blockState) {
@@ -153,7 +151,7 @@ public class HerbalismManager extends SkillManager {
         else {
             xp = ExperienceConfig.getInstance().getXp(skill, blockState.getBlockData());
 
-            if (Config.getInstance().getDoubleDropsEnabled(skill, material) && Permissions.isSubSkillEnabled(player, SubSkillType.HERBALISM_DOUBLE_DROPS)) {
+            if (MainConfig.getInstance().getDoubleDropsEnabled(skill, material) && Permissions.isSubSkillEnabled(player, SubSkillType.HERBALISM_DOUBLE_DROPS)) {
                 drops = blockState.getBlock().getDrops();
             }
 
@@ -209,9 +207,9 @@ public class HerbalismManager extends SkillManager {
         }
 
         String friendly = StringUtils.getFriendlyConfigBlockDataString(blockState.getBlockData());
-        if (!TreasureConfig.getInstance().hylianMap.containsKey(friendly))
+        if (!TreasureMainConfig.getInstance().hylianMap.containsKey(friendly))
             return false;
-        List<HylianTreasure> treasures = TreasureConfig.getInstance().hylianMap.get(friendly);
+        List<HylianTreasure> treasures = TreasureMainConfig.getInstance().hylianMap.get(friendly);
 
         Player player = getPlayer();
 

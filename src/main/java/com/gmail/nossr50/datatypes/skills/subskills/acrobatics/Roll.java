@@ -1,8 +1,6 @@
 package com.gmail.nossr50.datatypes.skills.subskills.acrobatics;
 
-import com.gmail.nossr50.config.AdvancedConfig;
-import com.gmail.nossr50.config.Config;
-import com.gmail.nossr50.config.experience.ExperienceConfig;
+import com.gmail.nossr50.config.MainConfig;
 import com.gmail.nossr50.datatypes.LimitedSizeList;
 import com.gmail.nossr50.datatypes.experience.XPGainReason;
 import com.gmail.nossr50.datatypes.interactions.NotificationType;
@@ -209,7 +207,7 @@ public class Roll extends AcrobaticsSubSkill {
             SoundManager.sendCategorizedSound(player, player.getLocation(), SoundType.ROLL_ACTIVATED, SoundCategory.PLAYERS);
             //player.sendMessage(LocaleLoader.getString("Acrobatics.Roll.Text"));
 
-            //if (!SkillUtils.cooldownExpired((long) mcMMOPlayer.getTeleportATS(), Config.getInstance().getXPAfterTeleportCooldown())) {
+            //if (!SkillUtils.cooldownExpired((long) mcMMOPlayer.getTeleportATS(), MainConfig.getInstance().getXPAfterTeleportCooldown())) {
             if(!isExploiting(player))
                 SkillUtils.applyXpGain(mcMMOPlayer, getPrimarySkill(), calculateRollXP(player, damage, true), XPGainReason.PVE);
             //}
@@ -218,7 +216,7 @@ public class Roll extends AcrobaticsSubSkill {
             return modifiedDamage;
         }
         else if (!isFatal(player, damage)) {
-            //if (!SkillUtils.cooldownExpired((long) mcMMOPlayer.getTeleportATS(), Config.getInstance().getXPAfterTeleportCooldown())) {
+            //if (!SkillUtils.cooldownExpired((long) mcMMOPlayer.getTeleportATS(), MainConfig.getInstance().getXPAfterTeleportCooldown())) {
             if(!isExploiting(player))
                 SkillUtils.applyXpGain(mcMMOPlayer, getPrimarySkill(), calculateRollXP(player, damage, false), XPGainReason.PVE);
             //}
@@ -272,7 +270,7 @@ public class Roll extends AcrobaticsSubSkill {
      * @return true if exploits are detected, false otherwise
      */
     private boolean isExploiting(Player player) {
-        if (!Config.getInstance().getAcrobaticsPreventAFK()) {
+        if (!MainConfig.getInstance().getAcrobaticsPreventAFK()) {
             return false;
         }
 
@@ -291,7 +289,7 @@ public class Roll extends AcrobaticsSubSkill {
         return false; //NOT EXPLOITING
 /*
         Location fallLocation = player.getLocation();
-        int maxTries = Config.getInstance().getAcrobaticsAFKMaxTries();
+        int maxTries = MainConfig.getInstance().getAcrobaticsAFKMaxTries();
 
         boolean sameLocation = (lastFallLocation != null && Misc.isNear(lastFallLocation, fallLocation, 2));
 

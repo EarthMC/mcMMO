@@ -1,5 +1,6 @@
 package com.gmail.nossr50.util;
 
+import com.gmail.nossr50.config.experience.ExperienceConfig;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
 import com.gmail.nossr50.mcMMO;
 import com.gmail.nossr50.skills.repair.Repair;
@@ -123,7 +124,8 @@ public final class BlockUtils {
                 return false;
 
             default :
-                return !isMcMMOAnvil(blockState) && !mcMMO.getModManager().isCustomAbilityBlock(blockState);
+                return !isMcMMOAnvil(blockState);
+                //return !isMcMMOAnvil(blockState) && !mcMMO.getModManager().isCustomAbilityBlock(blockState);
         }
     }
 
@@ -249,7 +251,7 @@ public final class BlockUtils {
                 return false;
 
             default :
-                return !isMcMMOAnvil(blockState) && !mcMMO.getModManager().isCustomAbilityBlock(blockState);
+                return !isMcMMOAnvil(blockState); // && !mcMMO.getModManager().isCustomAbilityBlock(blockState);
         }
     }
 
@@ -297,11 +299,13 @@ public final class BlockUtils {
      * @return true if the block should affected by Green Terra, false otherwise
      */
     public static boolean affectedByGreenTerra(BlockState blockState) {
-        if (ExperienceConfig.getInstance().doesBlockGiveSkillXP(PrimarySkillType.HERBALISM, blockState.getBlockData())) {
+        if (ExperienceConfig.getInstance().doesBlockGiveSkillXP(PrimarySkillType.HERBALISM, blockState.getType())) {
             return true;
         }
+        else
+            return false;
 
-        return mcMMO.getModManager().isCustomHerbalismBlock(blockState);
+        //return mcMMO.getModManager().isCustomHerbalismBlock(blockState);
     }
 
     /**
@@ -313,10 +317,10 @@ public final class BlockUtils {
      *         otherwise
      */
     public static Boolean affectedBySuperBreaker(BlockState blockState) {
-        if (ExperienceConfig.getInstance().doesBlockGiveSkillXP(PrimarySkillType.MINING, blockState.getBlockData()))
+        if (ExperienceConfig.getInstance().doesBlockGiveSkillXP(PrimarySkillType.MINING, blockState.getType()))
             return true;
 
-        return isOre(blockState) || mcMMO.getModManager().isCustomMiningBlock(blockState);
+        return isOre(blockState); //|| mcMMO.getModManager().isCustomMiningBlock(blockState);
     }
 
     /**
@@ -328,9 +332,11 @@ public final class BlockUtils {
      *         otherwise
      */
     public static boolean affectedByGigaDrillBreaker(BlockState blockState) {
-        if (ExperienceConfig.getInstance().doesBlockGiveSkillXP(PrimarySkillType.EXCAVATION, blockState.getBlockData()))
+        if (ExperienceConfig.getInstance().doesBlockGiveSkillXP(PrimarySkillType.EXCAVATION, blockState.getType()))
             return true;
-        return mcMMO.getModManager().isCustomExcavationBlock(blockState);
+        else
+            return false;
+        //return mcMMO.getModManager().isCustomExcavationBlock(blockState);
     }
 
     /**
@@ -341,9 +347,11 @@ public final class BlockUtils {
      * @return true if the block is a log, false otherwise
      */
     public static boolean isLog(BlockState blockState) {
-        if (ExperienceConfig.getInstance().doesBlockGiveSkillXP(PrimarySkillType.WOODCUTTING, blockState.getBlockData()))
+        if (ExperienceConfig.getInstance().doesBlockGiveSkillXP(PrimarySkillType.WOODCUTTING, blockState.getType()))
             return true;
-        return mcMMO.getModManager().isCustomLog(blockState);
+        else
+            return false;
+        //return mcMMO.getModManager().isCustomLog(blockState);
     }
 
     /**
@@ -364,7 +372,8 @@ public final class BlockUtils {
                 return true;
 
             default :
-                return mcMMO.getModManager().isCustomLeaf(blockState);
+                return false;
+                //return mcMMO.getModManager().isCustomLeaf(blockState);
         }
     }
 

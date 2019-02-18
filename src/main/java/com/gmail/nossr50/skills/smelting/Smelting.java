@@ -1,5 +1,7 @@
 package com.gmail.nossr50.skills.smelting;
 
+import com.gmail.nossr50.config.AdvancedConfig;
+import com.gmail.nossr50.config.experience.ExperienceConfig;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
 import com.gmail.nossr50.datatypes.skills.SubSkillType;
 import com.gmail.nossr50.mcMMO;
@@ -21,6 +23,7 @@ public class Smelting {
     public static double fluxMiningChance      = AdvancedConfig.getInstance().getFluxMiningChance();
 
     protected static int getResourceXp(ItemStack smelting) {
-        return mcMMO.getModManager().isCustomOre(smelting.getType()) ? mcMMO.getModManager().getBlock(smelting.getType()).getSmeltingXpGain() : ExperienceConfig.getInstance().getXp(PrimarySkillType.SMELTING, smelting.getType());
+        //return mcMMO.getModManager().isCustomOre(smelting.getType()) ? mcMMO.getModManager().getBlock(smelting.getType()).getSmeltingXpGain() : ExperienceConfig.getInstance().getXp(PrimarySkillType.SMELTING, smelting.getType());
+        return ExperienceConfig.getInstance().getXp(PrimarySkillType.SMELTING, smelting.getType());
     }
 }

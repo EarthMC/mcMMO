@@ -134,7 +134,7 @@ public class SmeltingManager extends SkillManager {
     public ItemStack smeltProcessing(ItemStack smelting, ItemStack result) {
         applyXpGain(Smelting.getResourceXp(smelting), XPGainReason.PVE);
 
-        if (isSecondSmeltSuccessful()) {
+        if (isSecondSmeltSuccessful() && (!result.getType().equals(Material.GOLD_INGOT) && !result.getType().equals(Material.GOLD_NUGGET))) {
             ItemStack newResult = result.clone();
 
             newResult.setAmount(result.getAmount() + 1);

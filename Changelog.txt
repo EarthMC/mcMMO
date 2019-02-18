@@ -13,6 +13,7 @@ Version 2.1.13
     mcMMO will nag admins about invalid config entries when they join the server
     mcMMO's mod config system has been temporarily disabled as no modded bukkit servers even exist
     removed child.yml, child skills now have hard coded parents
+    removed the hardcore and vampirism commands, these are dangerous settings and should not be toggle-able (turn them on in your configs if you want to use them)
 
 Version 2.1.12
     Salvage config entries are no longer case sensitive

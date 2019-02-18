@@ -9,8 +9,10 @@ Key:
 
 Version 2.1.13
     mcMMO's config system has been rewritten
+    mcMMO will no longer shutdown if it finds invalid config entries
+    mcMMO will nag admins about invalid config entries when they join the server
     mcMMO's mod config system has changed
-
+    removed child.yml
 
 Version 2.1.12
     Salvage config entries are no longer case sensitive

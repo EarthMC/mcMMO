@@ -1,10 +1,12 @@
 package com.gmail.nossr50.commands.skills;
 
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
+import com.gmail.nossr50.datatypes.skills.SubSkillType;
 import com.gmail.nossr50.datatypes.skills.subskills.AbstractSubSkill;
 import com.gmail.nossr50.listeners.InteractionManager;
 import com.gmail.nossr50.locale.LocaleLoader;
 import com.gmail.nossr50.util.Permissions;
+import com.gmail.nossr50.util.TextComponentFactory;
 import com.google.common.collect.ImmutableList;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -85,7 +87,15 @@ public class MmoInfoCommand implements TabExecutor {
             player.sendMessage(LocaleLoader.getString("Commands.MmoInfo.SubSkillHeader", subSkillName));
             player.sendMessage(LocaleLoader.getString("Commands.MmoInfo.DetailsHeader"));
             player.sendMessage(LocaleLoader.getString("Commands.MmoInfo.OldSkill"));
-            //TextComponentFactory.sendPlayerUrlHeader(player);
         }
+
+        for(SubSkillType subSkillType : SubSkillType.values())
+        {
+            if(subSkillType.getNiceNameNoSpaces(subSkillType).equalsIgnoreCase(subSkillName))
+                subSkillName = subSkillType.getWikiName(subSkillType.toString());
+        }
+
+        //Send Player Wiki Link
+        TextComponentFactory.sendPlayerSubSkillWikiLink(player, subSkillName);
     }
 }

@@ -371,15 +371,6 @@ public final class CommandRegistrationManager {
         command.setUsage(LocaleLoader.getString("Commands.Usage.0", "mcnotify"));
         command.setExecutor(new McnotifyCommand());
     }
-
-    private static void registerMobhealthCommand() {
-        PluginCommand command = mcMMO.p.getCommand("mobhealth");
-        command.setDescription("Change the style of the mob healthbar"); //TODO: Localize
-        command.setPermission("mcmmo.commands.mobhealth");
-        command.setPermissionMessage(permissionsMessage);
-        command.setUsage(LocaleLoader.getString("Commands.Usage.1", "mobhealth", "<DISABLED | HEARTS | BAR>"));
-        command.setExecutor(new MobhealthCommand());
-    }
     
     private static void registerMHDCommand() {
         PluginCommand command = mcMMO.p.getCommand("mhd");
@@ -400,15 +391,6 @@ public final class CommandRegistrationManager {
         command.setExecutor(new McscoreboardCommand());
     }
 
-    private static void registerKrakenCommand() {
-        PluginCommand command = mcMMO.p.getCommand("kraken");
-        command.setDescription("Unleash the kraken!"); //TODO: Localize
-        command.setPermission("mcmmo.commands.kraken;mcmmo.commands.kraken.others");
-        command.setPermissionMessage(permissionsMessage);
-        command.setUsage(LocaleLoader.getString("Commands.Usage.1", "kraken", "[" + LocaleLoader.getString("Commands.Usage.Player") + "]"));
-        command.setExecutor(new KrakenCommand());
-    }
-
     private static void registerMcImportCommand() {
         PluginCommand command = mcMMO.p.getCommand("mcimport");
         command.setDescription("Import mod config files"); //TODO: Localize
@@ -422,7 +404,6 @@ public final class CommandRegistrationManager {
         // Generic Commands
         registerMmoInfoCommand();
         registerMcImportCommand();
-        registerKrakenCommand();
         registerMcabilityCommand();
         registerMcgodCommand();
         registerMcChatSpyCommand();
@@ -430,7 +411,6 @@ public final class CommandRegistrationManager {
         registerMcnotifyCommand();
         registerMcrefreshCommand();
         registerMcscoreboardCommand();
-        registerMobhealthCommand();
         registerMHDCommand();
         registerXprateCommand();
 

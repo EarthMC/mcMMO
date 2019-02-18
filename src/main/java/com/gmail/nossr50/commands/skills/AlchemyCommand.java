@@ -1,10 +1,8 @@
 package com.gmail.nossr50.commands.skills;
 
-import com.gmail.nossr50.config.AdvancedConfig;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
 import com.gmail.nossr50.datatypes.skills.SubSkillType;
 import com.gmail.nossr50.locale.LocaleLoader;
-import com.gmail.nossr50.skills.alchemy.Alchemy.Tier;
 import com.gmail.nossr50.skills.alchemy.AlchemyManager;
 import com.gmail.nossr50.util.Permissions;
 import com.gmail.nossr50.util.TextComponentFactory;
@@ -31,9 +29,11 @@ public class AlchemyCommand extends SkillCommand {
         super(PrimarySkillType.ALCHEMY);
     }
 
-    protected String[] calculateAbilityDisplayValues(Player player, boolean isLucky) {
+    protected String[] calculateAbilityDisplayValues(Player player) {
         AlchemyManager alchemyManager = UserManager.getPlayer(player).getAlchemyManager();
         String[] displayValues = new String[2];
+
+        boolean isLucky = Permissions.lucky(player, PrimarySkillType.ALCHEMY);
 
         displayValues[0] = decimal.format(alchemyManager.calculateBrewSpeed(false)) + "x";
         displayValues[1] = isLucky ? decimal.format(alchemyManager.calculateBrewSpeed(true)) + "x" : null;
@@ -42,10 +42,10 @@ public class AlchemyCommand extends SkillCommand {
     }
 
     @Override
-    protected void dataCalculations(Player player, float skillValue, boolean isLucky) {
+    protected void dataCalculations(Player player, float skillValue) {
         // ALCHEMY_CATALYSIS
         if (canCatalysis) {
-            String[] catalysisStrings = calculateAbilityDisplayValues(player, isLucky);
+            String[] catalysisStrings = calculateAbilityDisplayValues(player);
             brewSpeed = catalysisStrings[0];
             brewSpeedLucky = catalysisStrings[1];
         }
@@ -66,31 +66,20 @@ public class AlchemyCommand extends SkillCommand {
     }
 
     @Override
-    protected List<String> effectsDisplay() {
-        List<String> messages = new ArrayList<String>();
-
-        if (canCatalysis) {
-            messages.add(LocaleLoader.getString("Effects.Template", LocaleLoader.getString("Alchemy.Effect.0"), LocaleLoader.getString("Alchemy.Effect.1")));
-        }
-
-        if (canConcoctions) {
-            messages.add(LocaleLoader.getString("Effects.Template", LocaleLoader.getString("Alchemy.Effect.2"), LocaleLoader.getString("Alchemy.Effect.3")));
-        }
-
-        return messages;
-    }
-
-    @Override
     protected List<String> statsDisplay(Player player, float skillValue, boolean hasEndurance, boolean isLucky) {
         List<String> messages = new ArrayList<String>();
 
         if (canCatalysis) {
-            messages.add(LocaleLoader.getString("Alchemy.Catalysis.Speed", brewSpeed) + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", brewSpeedLucky) : ""));
+            messages.add(getStatMessage(SubSkillType.ALCHEMY_CATALYSIS, brewSpeed)
+                    + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", brewSpeedLucky) : ""));
         }
 
         if (canConcoctions) {
-            messages.add(LocaleLoader.getString("Alchemy.Concoctions.Rank", tier, Tier.values().length));
-            messages.add(LocaleLoader.getString("Alchemy.Concoctions.Ingredients", ingredientCount, ingredientList));
+            messages.add(getStatMessage(false, true, SubSkillType.ALCHEMY_CONCOCTIONS, String.valueOf(tier), String.valueOf(RankUtils.getHighestRank(SubSkillType.ALCHEMY_CONCOCTIONS))));
+            messages.add(getStatMessage(true, true, SubSkillType.ALCHEMY_CONCOCTIONS, String.valueOf(ingredientCount), ingredientList));
+
+            //messages.add(LocaleLoader.getString("Alchemy.Concoctions.Rank", tier, RankUtils.getHighestRank(SubSkillType.ALCHEMY_CONCOCTIONS)));
+            //messages.add(LocaleLoader.getString("Alchemy.Concoctions.Ingredients", ingredientCount, ingredientList));
         }
 
         return messages;

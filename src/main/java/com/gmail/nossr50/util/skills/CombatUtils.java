@@ -1,10 +1,11 @@
 package com.gmail.nossr50.util.skills;
 
 import com.gmail.nossr50.config.experience.ExperienceConfig;
+import com.gmail.nossr50.datatypes.experience.XPGainReason;
 import com.gmail.nossr50.datatypes.interactions.NotificationType;
 import com.gmail.nossr50.datatypes.player.McMMOPlayer;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
-import com.gmail.nossr50.datatypes.skills.XPGainReason;
+import com.gmail.nossr50.datatypes.skills.SubSkillType;
 import com.gmail.nossr50.events.fake.FakeEntityDamageByEntityEvent;
 import com.gmail.nossr50.events.fake.FakeEntityDamageEvent;
 import com.gmail.nossr50.mcMMO;
@@ -14,9 +15,9 @@ import com.gmail.nossr50.runnables.skills.BleedTimerTask;
 import com.gmail.nossr50.skills.acrobatics.AcrobaticsManager;
 import com.gmail.nossr50.skills.archery.ArcheryManager;
 import com.gmail.nossr50.skills.axes.AxesManager;
-import com.gmail.nossr50.skills.swords.Swords;
 import com.gmail.nossr50.skills.swords.SwordsManager;
 import com.gmail.nossr50.skills.taming.TamingManager;
+import com.gmail.nossr50.skills.unarmed.Unarmed;
 import com.gmail.nossr50.skills.unarmed.UnarmedManager;
 import com.gmail.nossr50.util.*;
 import com.gmail.nossr50.util.player.NotificationManager;
@@ -47,14 +48,18 @@ public final class CombatUtils {
         McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
         SwordsManager swordsManager = mcMMOPlayer.getSwordsManager();
         double initialDamage = event.getDamage();
+
         Map<DamageModifier, Double> modifiers = getModifiers(event);
 
         if (swordsManager.canActivateAbility()) {
             mcMMOPlayer.checkAbilityActivation(PrimarySkillType.SWORDS);
         }
 
-        if (swordsManager.canUseBleed()) {
-            swordsManager.bleedCheck(target);
+        if(target.getHealth() - event.getFinalDamage() >= 1)
+        {
+            if (swordsManager.canUseRupture()) {
+                swordsManager.ruptureCheck(target);
+            }
         }
 
         if (swordsManager.canUseSerratedStrike()) {
@@ -118,20 +123,26 @@ public final class CombatUtils {
             mcMMOPlayer.checkAbilityActivation(PrimarySkillType.UNARMED);
         }
 
-        if (unarmedManager.canUseIronArm()) {
-            finalDamage += unarmedManager.ironArm();
-        }
+        //Only execute bonuses if the player is not spamming
+        if(unarmedManager.isPunchingCooldownOver())
+        {
+            if (unarmedManager.canUseIronArm()) {
+                finalDamage += unarmedManager.ironArm();
+            }
 
-        if (unarmedManager.canUseBerserk()) {
-            finalDamage += unarmedManager.berserkDamage(initialDamage);
-        }
+            if (unarmedManager.canUseBerserk()) {
+                finalDamage += unarmedManager.berserkDamage(initialDamage);
+            }
 
-        if (unarmedManager.canDisarm(target)) {
-            unarmedManager.disarmCheck((Player) target);
+            if (unarmedManager.canDisarm(target)) {
+                unarmedManager.disarmCheck((Player) target);
+            }
         }
 
         applyScaledModifiers(initialDamage, finalDamage, event);
         startGainXp(mcMMOPlayer, target, PrimarySkillType.UNARMED);
+
+        Unarmed.lastAttacked = System.currentTimeMillis(); //Track how often the player is punching
     }
 
     private static void processTamingCombat(LivingEntity target, Player master, Wolf wolf, EntityDamageByEntityEvent event) {
@@ -190,10 +201,10 @@ public final class CombatUtils {
             archeryManager.retrieveArrows(target);
         }
 
-        archeryManager.distanceXpBonus(target, arrow);
+        double distanceMultiplier = archeryManager.distanceXpBonusMultiplier(target, arrow);
 
         applyScaledModifiers(initialDamage, finalDamage, event);
-        startGainXp(mcMMOPlayer, target, PrimarySkillType.ARCHERY, arrow.getMetadata(mcMMO.bowForceKey).get(0).asDouble());
+        startGainXp(mcMMOPlayer, target, PrimarySkillType.ARCHERY, arrow.getMetadata(mcMMO.bowForceKey).get(0).asDouble() * distanceMultiplier);
     }
 
     /**
@@ -340,7 +351,7 @@ public final class CombatUtils {
      */
     @Deprecated
     public static void dealDamage(LivingEntity target, double damage, LivingEntity attacker) {
-        dealDamage(target, damage, DamageCause.ENTITY_ATTACK, attacker);
+        dealDamage(target, damage, DamageCause.CUSTOM, attacker);
     }
 
     /**
@@ -375,6 +386,17 @@ public final class CombatUtils {
         target.damage(callFakeDamageEvent(attacker, target, cause, damage));
     }
 
+    public static void dealNoInvulnerabilityTickDamage(LivingEntity target, double damage, Entity attacker) {
+        if (target.isDead()) {
+            return;
+        }
+
+        double incDmg = callFakeDamageEvent(attacker, target, DamageCause.CUSTOM, damage);
+
+        double newHealth = Math.max(0, target.getHealth() - incDmg);
+        target.setHealth(newHealth);
+    }
+
     /**
      * Apply Area-of-Effect ability actions.
      *
@@ -405,7 +427,7 @@ public final class CombatUtils {
                         NotificationManager.sendPlayerInformation((Player)entity, NotificationType.SUBSKILL_MESSAGE, "Swords.Combat.SS.Struck");
                     }
 
-                    BleedTimerTask.add(livingEntity, Swords.serratedStrikesBleedTicks);
+                    BleedTimerTask.add(livingEntity, attacker, UserManager.getPlayer(attacker).getSwordsManager().getRuptureBleedTicks(), RankUtils.getRank(attacker, SubSkillType.SWORDS_RUPTURE));
                     break;
 
                 case AXES:
@@ -440,7 +462,7 @@ public final class CombatUtils {
         XPGainReason xpGainReason;
 
         if (target instanceof Player) {
-            if (!ExperienceConfig.getInstance().getExperienceGainsPlayerVersusPlayerEnabled()) {
+            if (!ExperienceConfig.getInstance().getExperienceGainsPlayerVersusPlayerEnabled() || PartyManager.inSameParty(mcMMOPlayer.getPlayer(), (Player) target)) {
                 return;
             }
 
@@ -718,6 +740,6 @@ public final class CombatUtils {
             return;
         }
 
-        MobHealthbarUtils.handleMobHealthbars(player, target, damage, plugin);
+        MobHealthbarUtils.handleMobHealthbars(target, damage, plugin);
     }
 }

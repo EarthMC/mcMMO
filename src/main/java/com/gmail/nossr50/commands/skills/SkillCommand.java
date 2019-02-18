@@ -12,9 +12,11 @@ import com.gmail.nossr50.util.StringUtils;
 import com.gmail.nossr50.util.TextComponentFactory;
 import com.gmail.nossr50.util.commands.CommandUtils;
 import com.gmail.nossr50.util.player.UserManager;
+import com.gmail.nossr50.util.random.RandomChanceUtil;
 import com.gmail.nossr50.util.scoreboards.ScoreboardManager;
 import com.gmail.nossr50.util.skills.PerksUtils;
 import com.gmail.nossr50.util.skills.RankUtils;
+import com.gmail.nossr50.util.skills.SkillActivationType;
 import com.google.common.collect.ImmutableList;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -25,6 +27,7 @@ import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -62,12 +65,15 @@ public abstract class SkillCommand implements TabExecutor {
                 boolean hasEndurance = (PerksUtils.handleActivationPerks(player, 0, 0) != 0);
                 float skillValue = mcMMOPlayer.getSkillLevel(skill);
 
-                permissionsCheck(player);
-                dataCalculations(player, skillValue, isLucky);
+                //Send the players a few blank lines to make finding the top of the skill command easier
+                if(AdvancedConfig.getInstance().doesSkillCommandSendBlankLines())
+                    for(int i = 0; i < 2; i++)
+                    {
+                        player.sendMessage("");
+                    }
 
-                if (Config.getInstance().getSkillUseBoard()) {
-                    ScoreboardManager.enablePlayerSkillScoreboard(player, skill);
-                }
+                permissionsCheck(player);
+                dataCalculations(player, skillValue);
 
                 sendSkillCommandHeader(player, mcMMOPlayer, (int) skillValue);
 
@@ -89,17 +95,22 @@ public abstract class SkillCommand implements TabExecutor {
                 //Stats
                 getStatMessages(player, isLucky, hasEndurance, skillValue);
 
-                ChatColor hd1 = ChatColor.DARK_AQUA;
-                ChatColor c1 = ChatColor.GOLD;
-                ChatColor c2 = ChatColor.RED;
-
                 //Header
-                player.sendMessage(hd1+"[]=====[]"+c1+" mcMMO "+c2+"Overhaul"+c1+" Era "+hd1+"[]=====[]");
+
+
                 //Link Header
-                TextComponentFactory.sendPlayerUrlHeader(player);
+                if(Config.getInstance().getUrlLinksEnabled())
+                {
+                    player.sendMessage(LocaleLoader.getString("Overhaul.mcMMO.Header"));
+                    TextComponentFactory.sendPlayerUrlHeader(player);
+                }
+
+
+                if (Config.getInstance().getScoreboardsEnabled() && Config.getInstance().getSkillUseBoard()) {
+                    ScoreboardManager.enablePlayerSkillScoreboard(player, skill);
+                }
 
                 return true;
-
             default:
                 return skillGuideCommand.onCommand(sender, command, label, args);
         }
@@ -129,6 +140,10 @@ public abstract class SkillCommand implements TabExecutor {
 
         if(!skill.isChildSkill())
         {
+            /*
+             * NON-CHILD SKILLS
+             */
+
             //XP GAIN METHOD
             player.sendMessage(LocaleLoader.getString("Commands.XPGain.Overhaul", LocaleLoader.getString("Commands.XPGain." + StringUtils.getCapitalized(skill.toString()))));
 
@@ -136,18 +151,40 @@ public abstract class SkillCommand implements TabExecutor {
             player.sendMessage(LocaleLoader.getString("Effects.Level.Overhaul", skillValue, mcMMOPlayer.getSkillXpLevel(skill), mcMMOPlayer.getXpToLevel(skill)));
 
         } else {
-            //XP GAIN METHOD
-            player.sendMessage(LocaleLoader.getString("Commands.XPGain.Overhaul", LocaleLoader.getString("Commands.XPGain.Child")));
+            /*
+             * CHILD SKILLS
+             */
 
-            //LEVEL
-            player.sendMessage(LocaleLoader.getString("Effects.Child.Overhaul", skillValue, skillValue));
 
             Set<PrimarySkillType> parents = FamilyTree.getParents(skill);
+            ArrayList<PrimarySkillType> parentList = new ArrayList<>();
 
             //TODO: Add JSON here
             for (PrimarySkillType parent : parents) {
-                player.sendMessage(parent.getName() + " - " + LocaleLoader.getString("Effects.Level.Overhaul", mcMMOPlayer.getSkillLevel(parent), mcMMOPlayer.getSkillXpLevel(parent), mcMMOPlayer.getXpToLevel(parent)));
+                parentList.add(parent);
+                /*player.sendMessage(parent.getName() + " - " + LocaleLoader.getString("Effects.Level.Overhaul", mcMMOPlayer.getSkillLevel(parent), mcMMOPlayer.getSkillXpLevel(parent), mcMMOPlayer.getXpToLevel(parent)))*/;
             }
+
+            String parentMessage = "";
+
+            for(int i = 0; i < parentList.size(); i++)
+            {
+                if(i+1 < parentList.size())
+                {
+                    parentMessage += LocaleLoader.getString("Effects.Child.ParentList", parentList.get(i).getName(), mcMMOPlayer.getSkillLevel(parentList.get(i)));
+                    parentMessage += ChatColor.GRAY+", ";
+                } else {
+                    parentMessage += LocaleLoader.getString("Effects.Child.ParentList", parentList.get(i).getName(), mcMMOPlayer.getSkillLevel(parentList.get(i)));
+                }
+            }
+
+            //XP GAIN METHOD
+            player.sendMessage(LocaleLoader.getString("Commands.XPGain.Overhaul", LocaleLoader.getString("Commands.XPGain.Child")));
+
+            player.sendMessage(LocaleLoader.getString("Effects.Child.Overhaul", skillValue, parentMessage));
+            //LEVEL
+            //player.sendMessage(LocaleLoader.getString("Effects.Child.Overhaul", skillValue, skillValue));
+
         }
         /*
         if (!skill.isChildSkill()) {
@@ -183,25 +220,25 @@ public abstract class SkillCommand implements TabExecutor {
         return Math.min((int) skillValue, maxLevel) / rankChangeLevel;
     }
 
-    protected String[] calculateAbilityDisplayValues(double chance, boolean isLucky) {
-        String[] displayValues = new String[2];
-
-        displayValues[0] = percent.format(Math.min(chance, 100.0D) / 100.0D);
-        displayValues[1] = isLucky ? percent.format(Math.min(chance * 1.3333D, 100.0D) / 100.0D) : null;
-
-        return displayValues;
-    }
-
-    protected String[] calculateAbilityDisplayValues(float skillValue, SubSkillType subSkill, boolean isLucky) {
-        int maxBonusLevel = AdvancedConfig.getInstance().getMaxBonusLevel(subSkill);
-
-        return calculateAbilityDisplayValues((AdvancedConfig.getInstance().getMaxChance(subSkill) / maxBonusLevel) * Math.min(skillValue, maxBonusLevel), isLucky);
+    protected String[] getAbilityDisplayValues(SkillActivationType skillActivationType, Player player, SubSkillType subSkill) {
+        return RandomChanceUtil.calculateAbilityDisplayValues(skillActivationType, player, subSkill);
     }
 
     protected String[] calculateLengthDisplayValues(Player player, float skillValue) {
         int maxLength = skill.getAbility().getMaxLength();
-        int abilityLengthVar = Config.getInstance().getIsRetroMode() ? AdvancedConfig.getInstance().getAbilityLengthRetro() : AdvancedConfig.getInstance().getAbilityLengthStandard();
-        int length = 2 + (int) (skillValue / abilityLengthVar);
+        int abilityLengthVar = AdvancedConfig.getInstance().getAbilityLength();
+        int abilityLengthCap = AdvancedConfig.getInstance().getAbilityLengthCap();
+
+        int length;
+
+        if(abilityLengthCap <= 0)
+        {
+            length = 2 + (int) (skillValue / abilityLengthVar);
+        }
+        else {
+            length = 2 + (int) (Math.min(abilityLengthCap, skillValue) / abilityLengthVar);
+        }
+
         int enduranceLength = PerksUtils.handleActivationPerks(player, length, maxLength);
 
         if (maxLength != 0) {
@@ -211,11 +248,40 @@ public abstract class SkillCommand implements TabExecutor {
         return new String[] { String.valueOf(length), String.valueOf(enduranceLength) };
     }
 
-    protected abstract void dataCalculations(Player player, float skillValue, boolean isLucky);
+    protected String getStatMessage(SubSkillType subSkillType, String... vars)
+    {
+        return getStatMessage(false, false, subSkillType, vars);
+    }
+
+    protected String getStatMessage(boolean isExtra, boolean isCustom, SubSkillType subSkillType, String... vars)
+    {
+        String templateKey = isCustom ? "Ability.Generic.Template.Custom" : "Ability.Generic.Template";
+        String statDescriptionKey = !isExtra ? subSkillType.getLocaleKeyStatDescription() : subSkillType.getLocaleKeyStatExtraDescription();
+
+        if(isCustom)
+            return LocaleLoader.getString(templateKey, LocaleLoader.getString(statDescriptionKey, vars));
+        else
+        {
+            String[] mergedList = addItemToFirstPositionOfArray(LocaleLoader.getString(statDescriptionKey), vars);
+            return LocaleLoader.getString(templateKey, mergedList);
+        }
+    }
+
+
+    public static String[] addItemToFirstPositionOfArray(String itemToAdd, String... existingArray) {
+        String[] newArray = new String[existingArray.length + 1];
+        newArray[0] = itemToAdd;
+
+        System.arraycopy(existingArray, 0, newArray, 1, existingArray.length);
+
+        return newArray;
+    }
+
+    protected abstract void dataCalculations(Player player, float skillValue);
 
     protected abstract void permissionsCheck(Player player);
 
-    protected abstract List<String> effectsDisplay();
+    //protected abstract List<String> effectsDisplay();
 
     protected abstract List<String> statsDisplay(Player player, float skillValue, boolean hasEndurance, boolean isLucky);
 

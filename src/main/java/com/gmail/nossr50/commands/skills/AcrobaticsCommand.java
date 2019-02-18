@@ -2,10 +2,13 @@ package com.gmail.nossr50.commands.skills;
 
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
 import com.gmail.nossr50.datatypes.skills.SubSkillType;
+import com.gmail.nossr50.datatypes.skills.subskills.AbstractSubSkill;
+import com.gmail.nossr50.listeners.InteractionManager;
 import com.gmail.nossr50.locale.LocaleLoader;
-import com.gmail.nossr50.util.Permissions;
 import com.gmail.nossr50.util.TextComponentFactory;
-import com.gmail.nossr50.util.skills.SkillUtils;
+import com.gmail.nossr50.util.random.RandomChanceSkill;
+import com.gmail.nossr50.util.random.RandomChanceUtil;
+import com.gmail.nossr50.util.skills.SkillActivationType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.entity.Player;
 
@@ -24,10 +27,10 @@ public class AcrobaticsCommand extends SkillCommand {
     }
 
     @Override
-    protected void dataCalculations(Player player, float skillValue, boolean isLucky) {
+    protected void dataCalculations(Player player, float skillValue) {
         // ACROBATICS_DODGE
         if (canDodge) {
-            String[] dodgeStrings = SkillUtils.calculateAbilityDisplayValues(skillValue, SubSkillType.ACROBATICS_DODGE, isLucky);
+            String[] dodgeStrings = getAbilityDisplayValues(SkillActivationType.RANDOM_LINEAR_100_SCALE_WITH_CAP, player, SubSkillType.ACROBATICS_DODGE);
             dodgeChance = dodgeStrings[0];
             dodgeChanceLucky = dodgeStrings[1];
         }
@@ -40,38 +43,46 @@ public class AcrobaticsCommand extends SkillCommand {
     }
 
     @Override
-    protected List<String> effectsDisplay() {
-        List<String> messages = new ArrayList<String>();
-
-        if (canRoll) {
-            messages.add(LocaleLoader.getString("Effects.Template", LocaleLoader.getString("Acrobatics.Effect.0"), LocaleLoader.getString("Acrobatics.Effect.1")));
-            messages.add(LocaleLoader.getString("Effects.Template", LocaleLoader.getString("Acrobatics.Effect.2"), LocaleLoader.getString("Acrobatics.Effect.3")));
-        }
-
-        if (canDodge) {
-            messages.add(LocaleLoader.getString("Effects.Template", LocaleLoader.getString("Acrobatics.Effect.4"), LocaleLoader.getString("Acrobatics.Effect.5")));
-        }
-
-        return messages;
-    }
-
-    @Override
     protected List<String> statsDisplay(Player player, float skillValue, boolean hasEndurance, boolean isLucky) {
         List<String> messages = new ArrayList<String>();
 
-        /*
-        if (canRoll) {
-            messages.add(LocaleLoader.getString("Acrobatics.Roll.Chance", rollChance) + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", rollChanceLucky) : ""));
-        }
-
-        if (canGracefulRoll) {
-            messages.add(LocaleLoader.getString("Acrobatics.Roll.GraceChance", gracefulRollChance) + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", gracefulRollChanceLucky) : ""));
-        }
-        */
-
         if (canDodge) {
-            messages.add(LocaleLoader.getString("Acrobatics.DodgeChance", dodgeChance) + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", dodgeChanceLucky) : ""));
+            messages.add(getStatMessage(SubSkillType.ACROBATICS_DODGE, dodgeChance)
+                    + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", dodgeChanceLucky) : ""));
+        }
+        
+        if (canRoll) {
 
+            AbstractSubSkill abstractSubSkill = InteractionManager.getAbstractByName("Roll");
+
+            if(abstractSubSkill != null)
+            {
+                double rollChance, graceChance;
+
+                //Chance to roll at half
+                RandomChanceSkill roll_rcs  = new RandomChanceSkill(player, SubSkillType.ACROBATICS_ROLL);
+
+                //Chance to graceful roll
+                RandomChanceSkill grace_rcs = new RandomChanceSkill(player, SubSkillType.ACROBATICS_ROLL);
+                grace_rcs.setSkillLevel(grace_rcs.getSkillLevel() * 2); //Double Odds
+
+                //Chance Stat Calculations
+                rollChance       = RandomChanceUtil.getRandomChanceExecutionChance(roll_rcs);
+                graceChance      = RandomChanceUtil.getRandomChanceExecutionChance(grace_rcs);
+                //damageThreshold  = AdvancedConfig.getInstance().getRollDamageThreshold();
+
+                String rollStrings[] = getAbilityDisplayValues(SkillActivationType.RANDOM_LINEAR_100_SCALE_WITH_CAP, player, SubSkillType.ACROBATICS_ROLL);
+
+                //Format
+                double rollChanceLucky  = rollChance * 1.333D;
+                double graceChanceLucky = graceChance * 1.333D;
+
+                messages.add(getStatMessage(SubSkillType.ACROBATICS_ROLL, rollStrings[0])
+                        + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", rollStrings[1]) : ""));
+
+                /*messages.add(getStatMessage(true, false, SubSkillType.ACROBATICS_ROLL, String.valueOf(graceChance))
+                        + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", String.valueOf(graceChanceLucky)) : ""));*/
+            }
         }
 
         return messages;

@@ -1,36 +1,30 @@
 package com.gmail.nossr50.skills.smelting;
 
 import com.gmail.nossr50.config.Config;
+import com.gmail.nossr50.datatypes.experience.XPGainReason;
+import com.gmail.nossr50.datatypes.experience.XPGainSource;
 import com.gmail.nossr50.datatypes.player.McMMOPlayer;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
 import com.gmail.nossr50.datatypes.skills.SubSkillType;
-import com.gmail.nossr50.datatypes.skills.XPGainReason;
-import com.gmail.nossr50.events.skills.secondaryabilities.SubSkillWeightedActivationCheckEvent;
-import com.gmail.nossr50.locale.LocaleLoader;
 import com.gmail.nossr50.mcMMO;
 import com.gmail.nossr50.skills.SkillManager;
 import com.gmail.nossr50.skills.mining.Mining;
-import com.gmail.nossr50.skills.smelting.Smelting.Tier;
 import com.gmail.nossr50.util.BlockUtils;
 import com.gmail.nossr50.util.EventUtils;
 import com.gmail.nossr50.util.Misc;
 import com.gmail.nossr50.util.Permissions;
+import com.gmail.nossr50.util.random.RandomChanceUtil;
 import com.gmail.nossr50.util.skills.ParticleEffectUtils;
+import com.gmail.nossr50.util.skills.RankUtils;
 import com.gmail.nossr50.util.skills.SkillActivationType;
 import com.gmail.nossr50.util.skills.SkillUtils;
 import com.gmail.nossr50.util.sounds.SoundManager;
 import com.gmail.nossr50.util.sounds.SoundType;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.FurnaceBurnEvent;
-import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class SmeltingManager extends SkillManager {
     public SmeltingManager(McMMOPlayer mcMMOPlayer) {
@@ -38,11 +32,15 @@ public class SmeltingManager extends SkillManager {
     }
 
     public boolean canUseFluxMining(BlockState blockState) {
-        return getSkillLevel() >= Smelting.fluxMiningUnlockLevel && BlockUtils.affectedByFluxMining(blockState) && Permissions.isSubSkillEnabled(getPlayer(), SubSkillType.SMELTING_FLUX_MINING) && !mcMMO.getPlaceStore().isTrue(blockState);
+        return getSkillLevel() >= Smelting.fluxMiningUnlockLevel
+                && BlockUtils.affectedByFluxMining(blockState)
+                && Permissions.isSubSkillEnabled(getPlayer(), SubSkillType.SMELTING_FLUX_MINING)
+                && !mcMMO.getPlaceStore().isTrue(blockState);
     }
 
     public boolean isSecondSmeltSuccessful() {
-        return Permissions.isSubSkillEnabled(getPlayer(), SubSkillType.SMELTING_SECOND_SMELT) && SkillUtils.isActivationSuccessful(SkillActivationType.RANDOM_LINEAR_100_SCALE_WITH_CAP, SubSkillType.SMELTING_SECOND_SMELT, getPlayer(), this.skill, getSkillLevel(), activationChance);
+        return Permissions.isSubSkillEnabled(getPlayer(), SubSkillType.SMELTING_SECOND_SMELT)
+                && RandomChanceUtil.isActivationSuccessful(SkillActivationType.RANDOM_LINEAR_100_SCALE_WITH_CAP, SubSkillType.SMELTING_SECOND_SMELT, getPlayer());
     }
 
     /**
@@ -54,9 +52,7 @@ public class SmeltingManager extends SkillManager {
     public boolean processFluxMining(BlockState blockState) {
         Player player = getPlayer();
 
-        SubSkillWeightedActivationCheckEvent event = new SubSkillWeightedActivationCheckEvent(getPlayer(), SubSkillType.SMELTING_FLUX_MINING, Smelting.fluxMiningChance / activationChance);
-        mcMMO.p.getServer().getPluginManager().callEvent(event);
-        if ((event.getChance() * activationChance) > Misc.getRandom().nextInt(activationChance)) {
+        if (RandomChanceUtil.checkRandomChanceExecutionSuccess(getPlayer(), SubSkillType.SMELTING_FLUX_MINING, true)) {
             ItemStack item = null;
 
             switch (blockState.getType()) {
@@ -75,13 +71,13 @@ public class SmeltingManager extends SkillManager {
             if (item == null) {
                 return false;
             }
-            
+
             if (!EventUtils.simulateBlockBreak(blockState.getBlock(), player, true)) {
                 return false;
             }
 
             // We need to distribute Mining XP here, because the block break event gets cancelled
-            applyXpGain(Mining.getBlockXp(blockState), XPGainReason.PVE);
+            applyXpGain(Mining.getBlockXp(blockState), XPGainReason.PVE, XPGainSource.PASSIVE);
 
             SkillUtils.handleDurabilityChange(getPlayer().getInventory().getItemInMainHand(), Config.getInstance().getAbilityToolDamage());
 
@@ -100,26 +96,6 @@ public class SmeltingManager extends SkillManager {
         return false;
     }
 
-    public static ItemStack getFluxPickaxe(Material material, int amount) {
-        ItemStack itemStack = new ItemStack(material, amount);
-
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        itemMeta.setDisplayName(ChatColor.GOLD + LocaleLoader.getString("Item.FluxPickaxe.Name"));
-
-        List<String> itemLore = itemMeta.hasLore() ? itemMeta.getLore() : new ArrayList<String>();
-        itemLore.add("mcMMO Item");
-        itemLore.add(LocaleLoader.getString("Item.FluxPickaxe.Lore.1"));
-        itemLore.add(LocaleLoader.getString("Item.FluxPickaxe.Lore.2", Smelting.fluxMiningUnlockLevel));
-        itemMeta.setLore(itemLore);
-
-        itemStack.setItemMeta(itemMeta);
-        return itemStack;
-    }
-
-    public static FurnaceRecipe getFluxPickaxeRecipe(Material material) {
-        return new FurnaceRecipe(getFluxPickaxe(material, 1), material);
-    }
-
     /**
      * Increases burn time for furnace fuel.
      *
@@ -132,7 +108,7 @@ public class SmeltingManager extends SkillManager {
     }
 
     public ItemStack smeltProcessing(ItemStack smelting, ItemStack result) {
-        applyXpGain(Smelting.getResourceXp(smelting), XPGainReason.PVE);
+        applyXpGain(Smelting.getResourceXp(smelting), XPGainReason.PVE, XPGainSource.PASSIVE);
 
         if (isSecondSmeltSuccessful() && (!result.getType().equals(Material.GOLD_INGOT) && !result.getType().equals(Material.GOLD_NUGGET))) {
             ItemStack newResult = result.clone();
@@ -154,14 +130,6 @@ public class SmeltingManager extends SkillManager {
      * @return the vanilla XP multiplier
      */
     public int getVanillaXpMultiplier() {
-        int skillLevel = getSkillLevel();
-
-        for (Tier tier : Tier.values()) {
-            if (skillLevel >= tier.getLevel()) {
-                return tier.getVanillaXPBoostModifier();
-            }
-        }
-
-        return 1;
+        return RankUtils.getRank(getPlayer(), SubSkillType.SMELTING_UNDERSTANDING_THE_ART);
     }
 }

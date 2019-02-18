@@ -521,7 +521,9 @@ public final class ItemUtils {
         }
 
         for (Recipe recipe : mcMMO.p.getServer().getRecipesFor(item)) {
-            if (recipe instanceof FurnaceRecipe && ((FurnaceRecipe) recipe).getInput().getType().isBlock() && MaterialUtils.isOre(((FurnaceRecipe) recipe).getInput().getType())) {
+            if (recipe instanceof FurnaceRecipe
+                    && ((FurnaceRecipe) recipe).getInput().getType().isBlock()
+                    && MaterialUtils.isOre(((FurnaceRecipe) recipe).getInput().getType())) {
                 return true;
             }
         }
@@ -734,14 +736,5 @@ public final class ItemUtils {
 
         ItemMeta itemMeta = item.getItemMeta();
         return itemMeta.hasDisplayName() && itemMeta.getDisplayName().equals(ChatColor.GOLD + LocaleLoader.getString("Item.ChimaeraWing.Name"));
-    }
-
-    public static boolean isFluxPickaxe(ItemStack item) {
-        if (!isMcMMOItem(item)) {
-            return false;
-        }
-
-        ItemMeta itemMeta = item.getItemMeta();
-        return itemMeta.hasDisplayName() && itemMeta.getDisplayName().equals(ChatColor.GOLD + LocaleLoader.getString("Item.FluxPickaxe.Name"));
     }
 }

@@ -5,22 +5,15 @@ import org.bukkit.EntityEffect;
 import org.bukkit.entity.*;
 
 public class Taming {
-    public static int environmentallyAwareUnlockLevel = AdvancedConfig.getInstance().getEnviromentallyAwareUnlock();
-    public static int holyHoundUnlockLevel            = AdvancedConfig.getInstance().getHolyHoundUnlock();
-
-    public static int    fastFoodServiceUnlockLevel      = AdvancedConfig.getInstance().getFastFoodUnlock();
     public static double fastFoodServiceActivationChance = AdvancedConfig.getInstance().getFastFoodChance();
 
-    public static int    goreBleedTicks    = AdvancedConfig.getInstance().getGoreBleedTicks();
+    public static int    goreBleedTicks    = 2; //Equivalent to rank 1 in Rupture
     public static double goreModifier      = AdvancedConfig.getInstance().getGoreModifier();
 
-    public static int    sharpenedClawsUnlockLevel = AdvancedConfig.getInstance().getSharpenedClawsUnlock();
     public static double sharpenedClawsBonusDamage = AdvancedConfig.getInstance().getSharpenedClawsBonus();
 
-    public static int    shockProofUnlockLevel = AdvancedConfig.getInstance().getShockProofUnlock();
     public static double shockProofModifier    = AdvancedConfig.getInstance().getShockProofModifier();
 
-    public static int    thickFurUnlockLevel = AdvancedConfig.getInstance().getThickFurUnlock();
     public static double thickFurModifier    = AdvancedConfig.getInstance().getThickFurModifier();
 
     public static boolean canPreventDamage(Tameable pet, AnimalTamer owner) {

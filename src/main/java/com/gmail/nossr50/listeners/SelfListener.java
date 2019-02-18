@@ -2,26 +2,46 @@ package com.gmail.nossr50.listeners;
 
 import com.gmail.nossr50.config.Config;
 import com.gmail.nossr50.config.experience.ExperienceConfig;
+import com.gmail.nossr50.datatypes.experience.XPGainReason;
 import com.gmail.nossr50.datatypes.player.McMMOPlayer;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
-import com.gmail.nossr50.datatypes.skills.XPGainReason;
 import com.gmail.nossr50.events.experience.McMMOPlayerLevelUpEvent;
 import com.gmail.nossr50.events.experience.McMMOPlayerXpGainEvent;
 import com.gmail.nossr50.events.skills.abilities.McMMOPlayerAbilityActivateEvent;
+import com.gmail.nossr50.mcMMO;
 import com.gmail.nossr50.util.player.UserManager;
 import com.gmail.nossr50.util.scoreboards.ScoreboardManager;
+import com.gmail.nossr50.worldguard.WorldGuardManager;
+import com.gmail.nossr50.worldguard.WorldGuardUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
 public class SelfListener implements Listener {
+    //Used in task scheduling and other things
+    private final mcMMO plugin;
+
+    public SelfListener(mcMMO plugin)
+    {
+        this.plugin = plugin;
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLevelUp(McMMOPlayerLevelUpEvent event) {
         Player player = event.getPlayer();
         PrimarySkillType skill = event.getSkill();
 
-        ScoreboardManager.handleLevelUp(player, skill);
+        //Players can gain multiple levels especially during xprate events
+        for(int i = 0; i < event.getLevelsGained(); i++)
+        {
+            int previousLevelGained = event.getSkillLevel() - i;
+            //Send player skill unlock notifications
+            UserManager.getPlayer(player).processUnlockNotifications(plugin, event.getSkill(), previousLevelGained);
+        }
+
+        if(Config.getInstance().getScoreboardsEnabled())
+            ScoreboardManager.handleLevelUp(player, skill);
 
         if (!Config.getInstance().getLevelUpEffectsEnabled()) {
             return;
@@ -34,20 +54,45 @@ public class SelfListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerXp(McMMOPlayerXpGainEvent event) {
-        ScoreboardManager.handleXp(event.getPlayer(), event.getSkill());
+        if(Config.getInstance().getScoreboardsEnabled())
+            ScoreboardManager.handleXp(event.getPlayer(), event.getSkill());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onAbility(McMMOPlayerAbilityActivateEvent event) {
-        ScoreboardManager.cooldownUpdate(event.getPlayer(), event.getSkill());
+        if(Config.getInstance().getScoreboardsEnabled())
+            ScoreboardManager.cooldownUpdate(event.getPlayer(), event.getSkill());
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onPlayerXpGain(McMMOPlayerXpGainEvent event) {
-        if (event.getXpGainReason() == XPGainReason.COMMAND)
-            return;
+        Player player = event.getPlayer();
+        McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
         PrimarySkillType primarySkillType = event.getSkill();
+
+        //WorldGuard XP Check
+        if(event.getXpGainReason() == XPGainReason.PVE ||
+                event.getXpGainReason() == XPGainReason.PVP ||
+                event.getXpGainReason() == XPGainReason.SHARED_PVE ||
+                event.getXpGainReason() == XPGainReason.SHARED_PVP)
+        {
+            if(WorldGuardUtils.isWorldGuardLoaded())
+            {
+                if(!WorldGuardManager.getInstance().hasXPFlag(player))
+                {
+                    event.setRawXpGained(0);
+                    event.setCancelled(true);
+                }
+            }
+        }
+
+        if (event.getXpGainReason() == XPGainReason.COMMAND)
+        {
+            return;
+        }
+
         int threshold = ExperienceConfig.getInstance().getDiminishedReturnsThreshold(primarySkillType);
+
         if (threshold <= 0 || !ExperienceConfig.getInstance().getDiminishedReturnsEnabled()) {
             // Diminished returns is turned off
             return;
@@ -58,9 +103,6 @@ public class SelfListener implements Listener {
             // Don't calculate for XP subtraction
             return;
         }
-
-        Player player = event.getPlayer();
-        McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
 
         if (primarySkillType.isChildSkill()) {
             return;

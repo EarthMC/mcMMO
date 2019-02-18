@@ -4,6 +4,17 @@
 /.settings
 /dependency-reduced-pom.xml
 
+#vs code
+/.vscode
+
+# Maven Depends
+/lib
+
+# gradle
+/.gradle
+/mcMMO-core/.gradle
+/mcMMO-core/gradle
+
 # netbeans
 /nbproject
 

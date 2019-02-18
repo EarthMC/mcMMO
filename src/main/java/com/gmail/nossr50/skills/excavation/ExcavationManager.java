@@ -1,17 +1,19 @@
 package com.gmail.nossr50.skills.excavation;
 
 import com.gmail.nossr50.config.Config;
+import com.gmail.nossr50.datatypes.experience.XPGainReason;
 import com.gmail.nossr50.datatypes.player.McMMOPlayer;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
 import com.gmail.nossr50.datatypes.skills.SubSkillType;
-import com.gmail.nossr50.datatypes.skills.XPGainReason;
 import com.gmail.nossr50.datatypes.treasure.ExcavationTreasure;
 import com.gmail.nossr50.skills.SkillManager;
 import com.gmail.nossr50.util.Misc;
 import com.gmail.nossr50.util.Permissions;
+import com.gmail.nossr50.util.random.RandomChanceUtil;
 import com.gmail.nossr50.util.skills.SkillUtils;
 import org.bukkit.Location;
 import org.bukkit.block.BlockState;
+import org.bukkit.entity.Player;
 
 import java.util.List;
 
@@ -28,7 +30,7 @@ public class ExcavationManager extends SkillManager {
     public void excavationBlockCheck(BlockState blockState) {
         int xp = Excavation.getBlockXP(blockState);
 
-        if (Permissions.isSubSkillEnabled(getPlayer(), SubSkillType.EXCAVATION_TREASURE_HUNTER)) {
+        if (Permissions.isSubSkillEnabled(getPlayer(), SubSkillType.EXCAVATION_ARCHAEOLOGY)) {
             List<ExcavationTreasure> treasures = Excavation.getTreasures(blockState);
 
             if (!treasures.isEmpty()) {
@@ -36,7 +38,8 @@ public class ExcavationManager extends SkillManager {
                 Location location = Misc.getBlockCenter(blockState);
 
                 for (ExcavationTreasure treasure : treasures) {
-                    if (skillLevel >= treasure.getDropLevel() && SkillUtils.treasureDropSuccessful(getPlayer(), treasure.getDropChance(), activationChance)) {
+                    if (skillLevel >= treasure.getDropLevel()
+                            && RandomChanceUtil.checkRandomChanceExecutionSuccess(getPlayer(), PrimarySkillType.EXCAVATION, treasure.getDropChance())) {
                         xp += treasure.getXp();
                         Misc.dropItem(location, treasure.getDrop());
                     }
@@ -45,6 +48,25 @@ public class ExcavationManager extends SkillManager {
         }
 
         applyXpGain(xp, XPGainReason.PVE);
+    }
+
+    public void printExcavationDebug(Player player, BlockState blockState)
+    {
+        if (Permissions.isSubSkillEnabled(getPlayer(), SubSkillType.EXCAVATION_ARCHAEOLOGY)) {
+            List<ExcavationTreasure> treasures = Excavation.getTreasures(blockState);
+
+            if (!treasures.isEmpty()) {
+                for (ExcavationTreasure treasure : treasures) {
+                    player.sendMessage("|||||||||||||||||||||||||||||||||");
+                    player.sendMessage("[mcMMO DEBUG] Treasure found: ("+treasure.getDrop().getType().toString()+")");
+                    player.sendMessage("[mcMMO DEBUG] Drop Chance for Treasure: "+treasure.getDropChance());
+                    player.sendMessage("[mcMMO DEBUG] Skill Level Required: "+treasure.getDropLevel());
+                    player.sendMessage("[mcMMO DEBUG] XP for Treasure: "+treasure.getXp());
+                }
+            } else {
+                player.sendMessage("[mcMMO DEBUG] No treasures found for this block.");
+            }
+        }
     }
 
     /**

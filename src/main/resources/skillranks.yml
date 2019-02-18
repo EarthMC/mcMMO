@@ -31,6 +31,11 @@ Alchemy:
             Rank_7: 850
             Rank_8: 1000
 Archery:
+    ArrowRetrieval:
+        Standard:
+            Rank_1: 2
+        RetroMode:
+            Rank_1: 20
     SkillShot:
         Standard:
             Rank_1: 5
@@ -74,12 +79,28 @@ Archery:
             Rank_18: 900
             Rank_19: 950
             Rank_20: 1000
+Acrobatics:
+    Dodge:
+        Standard:
+            Rank_1: 2
+        RetroMode:
+            Rank_1: 20
 Axes:
     SkullSplitter:
         Standard:
-            Rank_1: 10
+            Rank_1: 5
         RetroMode:
-            Rank_1: 100
+            Rank_1: 50
+    CriticalStrikes:
+        Standard:
+            Rank_1: 2
+        RetroMode:
+            Rank_1: 20
+    GreaterImpact:
+        Standard:
+            Rank_1: 25
+        RetroMode:
+            Rank_1: 250
     ArmorImpact:
         Standard:
             Rank_1: 5
@@ -135,11 +156,31 @@ Axes:
             Rank_3: 150
             Rank_4: 200
 Taming:
-    FastFoodService:
+    BeastLore:
+        Standard:
+            Rank_1: 2
+        RetroMode:
+            Rank_1: 20
+    Gore:
+        Standard:
+            Rank_1: 15
+        RetroMode:
+            Rank_1: 150
+    CallOfTheWild:
         Standard:
             Rank_1: 5
         RetroMode:
             Rank_1: 50
+    Pummel:
+        Standard:
+            Rank_1: 20
+        RetroMode:
+            Rank_1: 200
+    FastFoodService:
+        Standard:
+            Rank_1: 20
+        RetroMode:
+            Rank_1: 200
     EnvironmentallyAware:
         Standard:
             Rank_1: 10
@@ -166,6 +207,11 @@ Taming:
         RetroMode:
             Rank_1: 750
 Smelting:
+    FluxMining:
+        Standard:
+            Rank_1: 25
+        Retro:
+            Rank_1: 250
     UnderstandingTheArt:
         Standard:
             Rank_1: 10
@@ -186,7 +232,12 @@ Smelting:
             Rank_7: 850
             Rank_8: 1000
 Salvage:
-    UnderstandingTheArt:
+    AdvancedSalvage:
+        Standard:
+            Rank_1: 35
+        RetroMode:
+            Rank_1: 350
+    ArcaneSalvage:
         Standard:
             Rank_1: 10
             Rank_2: 25
@@ -208,9 +259,9 @@ Salvage:
 Mining:
     SuperBreaker:
         Standard:
-            Rank_1: 10
+            Rank_1: 5
         RetroMode:
-            Rank_1: 100
+            Rank_1: 50
     # For now make sure rank 1 is the same as blast mining rank 1, it's a bit hacky, I'll fix it later
     BiggerBombs:
         Standard:
@@ -245,9 +296,9 @@ Mining:
 Herbalism:
     GreenTerra:
         Standard:
-            Rank_1: 10
+            Rank_1: 5
         RetroMode:
-            Rank_1: 100
+            Rank_1: 50
     GreenThumb:
         Standard:
             Rank_1: 25
@@ -273,11 +324,21 @@ Herbalism:
             Rank_4: 800
             Rank_5: 1000
 Fishing:
+    MagicHunter:
+        Standard:
+            Rank_1: 20
+        RetroMode:
+            Rank_1: 200
+    Shake:
+        Standard:
+            Rank_1: 15
+        RetroMode:
+            Rank_1: 150
     MasterAngler:
         Standard:
             Rank_1: 50
         RetroMode:
-            Rank_1: 150
+            Rank_1: 500
     IceFishing:
         Standard:
             Rank_1: 5
@@ -316,6 +377,22 @@ Fishing:
             Rank_7: 850
             Rank_8: 1000
 Swords:
+    CounterAttack:
+        Standard:
+            Rank_1: 20
+        RetroMode:
+            Rank_1: 200
+    Rupture:
+        Standard:
+            Rank_1: 5
+            Rank_2: 15
+            Rank_3: 75
+            Rank_4: 90
+        RetroMode:
+            Rank_1: 50
+            Rank_2: 150
+            Rank_3: 750
+            Rank_4: 900
     SerratedStrikes:
         Standard:
             Rank_1: 10
@@ -327,6 +404,35 @@ Unarmed:
             Rank_1: 10
         RetroMode:
             Rank_1: 100
+    ArrowDeflect:
+        Standard:
+            Rank_1: 20
+        RetroMode:
+            Rank_1: 200
+    Disarm:
+        Standard:
+            Rank_1: 25
+        RetroMode:
+            Rank_1: 250
+    IronGrip:
+        Standard:
+            Rank_1: 60
+        RetroMode:
+            Rank_1: 600
+    IronArmStyle:
+        Standard:
+            Rank_1: 2
+            Rank_2: 25
+            Rank_3: 50
+            Rank_4: 75
+            Rank_5: 100
+        RetroMode:
+            Rank_1: 20
+            Rank_2: 250
+            Rank_3: 500
+            Rank_4: 750
+            Rank_5: 1000
+
 Woodcutting:
     Splinter:
         Standard:
@@ -339,13 +445,13 @@ Woodcutting:
             Rank_3: 550
     TreeFeller:
         Standard:
-            Rank_1: 10
+            Rank_1: 5
             Rank_2: 25
             Rank_3: 50
             Rank_4: 75
             Rank_5: 100
         RetroMode:
-            Rank_1: 100
+            Rank_1: 50
             Rank_2: 250
             Rank_3: 500
             Rank_4: 750
@@ -385,10 +491,40 @@ Woodcutting:
 Excavation:
     GigaDrillBreaker:
         Standard:
-            Rank_1: 10
+            Rank_1: 5
         RetroMode:
-            Rank_1: 100
-    TreasureHunter:
+            Rank_1: 50
+    Archaeology:
+        Standard:
+            Rank_1: 5
+            Rank_2: 25
+            Rank_3: 35
+            Rank_4: 50
+            Rank_5: 65
+            Rank_6: 75
+            Rank_7: 85
+            Rank_8: 100
+        RetroMode:
+            Rank_1: 50
+            Rank_2: 250
+            Rank_3: 350
+            Rank_4: 500
+            Rank_5: 650
+            Rank_6: 750
+            Rank_7: 850
+            Rank_8: 1000
+Repair:
+    RepairMastery:
+        Standard:
+            Rank_1: 20
+        RetroMode:
+            Rank_1: 200
+    SuperRepair:
+        Standard:
+            Rank_1: 40
+        RetroMode:
+            Rank_1: 400
+    ArcaneForging:
         Standard:
             Rank_1: 10
             Rank_2: 25

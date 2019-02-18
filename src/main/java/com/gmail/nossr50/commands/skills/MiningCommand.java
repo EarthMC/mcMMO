@@ -1,16 +1,14 @@
 package com.gmail.nossr50.commands.skills;
 
-import com.gmail.nossr50.config.AdvancedConfig;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
 import com.gmail.nossr50.datatypes.skills.SubSkillType;
 import com.gmail.nossr50.locale.LocaleLoader;
-import com.gmail.nossr50.skills.mining.BlastMining;
-import com.gmail.nossr50.skills.mining.BlastMining.Tier;
 import com.gmail.nossr50.skills.mining.MiningManager;
 import com.gmail.nossr50.util.Permissions;
 import com.gmail.nossr50.util.TextComponentFactory;
 import com.gmail.nossr50.util.player.UserManager;
 import com.gmail.nossr50.util.skills.RankUtils;
+import com.gmail.nossr50.util.skills.SkillActivationType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.entity.Player;
 
@@ -41,21 +39,7 @@ public class MiningCommand extends SkillCommand {
     }
 
     @Override
-    protected void dataCalculations(Player player, float skillValue, boolean isLucky) {
-        // SUPER BREAKER
-        if (canSuperBreaker) {
-            String[] superBreakerStrings = calculateLengthDisplayValues(player, skillValue);
-            superBreakerLength = superBreakerStrings[0];
-            superBreakerLengthEndurance = superBreakerStrings[1];
-        }
-
-        // DOUBLE DROPS
-        if (canDoubleDrop) {
-            String[] doubleDropStrings = calculateAbilityDisplayValues(skillValue, SubSkillType.MINING_DOUBLE_DROPS, isLucky);
-            doubleDropChance = doubleDropStrings[0];
-            doubleDropChanceLucky = doubleDropStrings[1];
-        }
-
+    protected void dataCalculations(Player player, float skillValue) {
         // BLAST MINING
         if (canBlast || canDemoExpert || canBiggerBombs) {
             MiningManager miningManager = UserManager.getPlayer(player).getMiningManager();
@@ -66,6 +50,20 @@ public class MiningCommand extends SkillCommand {
             debrisReduction = percent.format(miningManager.getDebrisReduction() / 30.0D); // Base received in TNT is 30%
             blastDamageDecrease = percent.format(miningManager.getBlastDamageModifier() / 100.0D);
             blastRadiusIncrease = miningManager.getBlastRadiusModifier();
+        }
+        
+        // DOUBLE DROPS
+        if (canDoubleDrop) {
+            String[] doubleDropStrings = getAbilityDisplayValues(SkillActivationType.RANDOM_LINEAR_100_SCALE_WITH_CAP, player, SubSkillType.MINING_DOUBLE_DROPS);
+            doubleDropChance = doubleDropStrings[0];
+            doubleDropChanceLucky = doubleDropStrings[1];
+        }
+        
+        // SUPER BREAKER
+        if (canSuperBreaker) {
+            String[] superBreakerStrings = calculateLengthDisplayValues(player, skillValue);
+            superBreakerLength = superBreakerStrings[0];
+            superBreakerLengthEndurance = superBreakerStrings[1];
         }
     }
 
@@ -79,75 +77,34 @@ public class MiningCommand extends SkillCommand {
     }
 
     @Override
-    protected List<String> effectsDisplay() {
-        List<String> messages = new ArrayList<String>();
-
-        if (canSuperBreaker) {
-            messages.add(LocaleLoader.getString("Effects.Template", LocaleLoader.getString("Mining.Effect.0"), LocaleLoader.getString("Mining.Effect.1")));
-        }
-
-        if (canDoubleDrop) {
-            messages.add(LocaleLoader.getString("Effects.Template", LocaleLoader.getString("Mining.Effect.2"), LocaleLoader.getString("Mining.Effect.3")));
-        }
-
-        if (canBlast) {
-            messages.add(LocaleLoader.getString("Effects.Template", LocaleLoader.getString("Mining.Effect.4"), LocaleLoader.getString("Mining.Effect.5")));
-        }
-
-        if (canBiggerBombs) {
-            messages.add(LocaleLoader.getString("Effects.Template", LocaleLoader.getString("Mining.Effect.6"), LocaleLoader.getString("Mining.Effect.7")));
-        }
-
-        if (canDemoExpert) {
-            messages.add(LocaleLoader.getString("Effects.Template", LocaleLoader.getString("Mining.Effect.8"), LocaleLoader.getString("Mining.Effect.9")));
-        }
-
-        return messages;
-    }
-
-    @Override
     protected List<String> statsDisplay(Player player, float skillValue, boolean hasEndurance, boolean isLucky) {
         List<String> messages = new ArrayList<String>();
 
+        if (canBiggerBombs) {
+            messages.add(getStatMessage(true, true, SubSkillType.MINING_BLAST_MINING, String.valueOf(blastRadiusIncrease)));
+            //messages.add(LocaleLoader.getString("Mining.Blast.Radius.Increase", blastRadiusIncrease));
+        }
+        
+        if (canBlast) {
+            messages.add(getStatMessage(false, true, SubSkillType.MINING_BLAST_MINING, String.valueOf(blastMiningRank), String.valueOf(RankUtils.getHighestRank(SubSkillType.MINING_BLAST_MINING)), LocaleLoader.getString("Mining.Blast.Effect", oreBonus, debrisReduction, bonusTNTDrops)));
+            //messages.add(LocaleLoader.getString("Mining.Blast.Rank", blastMiningRank, RankUtils.getHighestRank(SubSkillType.MINING_BLAST_MINING), LocaleLoader.getString("Mining.Blast.Effect", oreBonus, debrisReduction, bonusTNTDrops)));
+        }
+        
+         if (canDemoExpert) {
+            messages.add(getStatMessage(SubSkillType.MINING_DEMOLITIONS_EXPERTISE, blastDamageDecrease));
+            //messages.add(LocaleLoader.getString("Mining.Effect.Decrease", blastDamageDecrease));
+        }
+        
         if (canDoubleDrop) {
-            messages.add(LocaleLoader.getString("Mining.Effect.DropChance", doubleDropChance) + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", doubleDropChanceLucky) : ""));
+            messages.add(getStatMessage(SubSkillType.HERBALISM_DOUBLE_DROPS, doubleDropChance)
+                    + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", doubleDropChanceLucky) : ""));
+            //messages.add(LocaleLoader.getString("Mining.Effect.DropChance", doubleDropChance) + (isLucky ? LocaleLoader.getString("Perks.Lucky.Bonus", doubleDropChanceLucky) : ""));
         }
 
         if (canSuperBreaker) {
-            messages.add(LocaleLoader.getString("Mining.Ability.Length", superBreakerLength) + (hasEndurance ? LocaleLoader.getString("Perks.ActivationTime.Bonus", superBreakerLengthEndurance) : ""));
-        }
-
-        if (canBlast) {
-            int unlockLevel = AdvancedConfig.getInstance().getBlastMiningRankLevel(Tier.ONE);
-
-            if (skillValue < unlockLevel) {
-                messages.add(LocaleLoader.getString("Ability.Generic.Template.Lock", LocaleLoader.getString("Mining.Ability.Locked.0", unlockLevel)));
-            }
-            else {
-                messages.add(LocaleLoader.getString("Mining.Blast.Rank", blastMiningRank, Tier.values().length, LocaleLoader.getString("Mining.Blast.Effect", oreBonus, debrisReduction, bonusTNTDrops)));
-            }
-        }
-
-        if (canBiggerBombs) {
-            int unlockLevel = BlastMining.getBiggerBombsUnlockLevel();
-
-            if (skillValue < unlockLevel) {
-                messages.add(LocaleLoader.getString("Ability.Generic.Template.Lock", LocaleLoader.getString("Mining.Ability.Locked.1", unlockLevel)));
-            }
-            else {
-                messages.add(LocaleLoader.getString("Mining.Blast.Radius.Increase", blastRadiusIncrease));
-            }
-        }
-
-        if (canDemoExpert) {
-            int unlockLevel = BlastMining.getDemolitionExpertUnlockLevel();
-
-            if (skillValue < unlockLevel) {
-                messages.add(LocaleLoader.getString("Ability.Generic.Template.Lock", LocaleLoader.getString("Mining.Ability.Locked.2", unlockLevel)));
-            }
-            else {
-                messages.add(LocaleLoader.getString("Mining.Effect.Decrease", blastDamageDecrease));
-            }
+            messages.add(getStatMessage(SubSkillType.MINING_SUPER_BREAKER, superBreakerLength)
+                    + (hasEndurance ? LocaleLoader.getString("Perks.ActivationTime.Bonus", superBreakerLengthEndurance) : ""));
+            //messages.add(LocaleLoader.getString("Mining.Ability.Length", superBreakerLength) + (hasEndurance ? LocaleLoader.getString("Perks.ActivationTime.Bonus", superBreakerLengthEndurance) : ""));
         }
 
         return messages;

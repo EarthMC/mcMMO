@@ -4,15 +4,18 @@ import com.gmail.nossr50.api.exceptions.*;
 import com.gmail.nossr50.config.Config;
 import com.gmail.nossr50.config.experience.ExperienceConfig;
 import com.gmail.nossr50.datatypes.experience.FormulaType;
+import com.gmail.nossr50.datatypes.experience.XPGainReason;
+import com.gmail.nossr50.datatypes.experience.XPGainSource;
 import com.gmail.nossr50.datatypes.player.McMMOPlayer;
 import com.gmail.nossr50.datatypes.player.PlayerProfile;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
-import com.gmail.nossr50.datatypes.skills.XPGainReason;
 import com.gmail.nossr50.mcMMO;
 import com.gmail.nossr50.skills.child.FamilyTree;
 import com.gmail.nossr50.util.player.UserManager;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
 
@@ -102,11 +105,11 @@ public final class ExperienceAPI {
      */
     public static void addRawXP(Player player, String skillType, float XP, String xpGainReason, boolean isUnshared) {
         if (isUnshared) {
-            getPlayer(player).beginUnsharedXpGain(getSkillType(skillType), XP, getXPGainReason(xpGainReason));
+            getPlayer(player).beginUnsharedXpGain(getSkillType(skillType), XP, getXPGainReason(xpGainReason), XPGainSource.CUSTOM);
             return;
         }
 
-        getPlayer(player).applyXpGain(getSkillType(skillType), XP, getXPGainReason(xpGainReason));
+        getPlayer(player).applyXpGain(getSkillType(skillType), XP, getXPGainReason(xpGainReason), XPGainSource.CUSTOM);
     }
 
     /**
@@ -188,7 +191,7 @@ public final class ExperienceAPI {
      * @throws InvalidXPGainReasonException if the given xpGainReason is not valid
      */
     public static void addMultipliedXP(Player player, String skillType, int XP, String xpGainReason) {
-        getPlayer(player).applyXpGain(getSkillType(skillType), (int) (XP * ExperienceConfig.getInstance().getExperienceGainsGlobalMultiplier()), getXPGainReason(xpGainReason));
+        getPlayer(player).applyXpGain(getSkillType(skillType), (int) (XP * ExperienceConfig.getInstance().getExperienceGainsGlobalMultiplier()), getXPGainReason(xpGainReason), XPGainSource.CUSTOM);
     }
 
     /**
@@ -259,11 +262,11 @@ public final class ExperienceAPI {
         PrimarySkillType skill = getSkillType(skillType);
 
         if (isUnshared) {
-            getPlayer(player).beginUnsharedXpGain(skill, (int) (XP / skill.getXpModifier() * ExperienceConfig.getInstance().getExperienceGainsGlobalMultiplier()), getXPGainReason(xpGainReason));
+            getPlayer(player).beginUnsharedXpGain(skill, (int) (XP / skill.getXpModifier() * ExperienceConfig.getInstance().getExperienceGainsGlobalMultiplier()), getXPGainReason(xpGainReason), XPGainSource.CUSTOM);
             return;
         }
 
-        getPlayer(player).applyXpGain(skill, (int) (XP / skill.getXpModifier() * ExperienceConfig.getInstance().getExperienceGainsGlobalMultiplier()), getXPGainReason(xpGainReason));
+        getPlayer(player).applyXpGain(skill, (int) (XP / skill.getXpModifier() * ExperienceConfig.getInstance().getExperienceGainsGlobalMultiplier()), getXPGainReason(xpGainReason), XPGainSource.CUSTOM);
     }
 
     /**
@@ -337,11 +340,11 @@ public final class ExperienceAPI {
      */
     public static void addXP(Player player, String skillType, int XP, String xpGainReason, boolean isUnshared) {
         if (isUnshared) {
-            getPlayer(player).beginUnsharedXpGain(getSkillType(skillType), XP, getXPGainReason(xpGainReason));
+            getPlayer(player).beginUnsharedXpGain(getSkillType(skillType), XP, getXPGainReason(xpGainReason), XPGainSource.CUSTOM);
             return;
         }
 
-        getPlayer(player).beginXpGain(getSkillType(skillType), XP, getXPGainReason(xpGainReason));
+        getPlayer(player).beginXpGain(getSkillType(skillType), XP, getXPGainReason(xpGainReason), XPGainSource.CUSTOM);
     }
 
     /**
@@ -1008,6 +1011,74 @@ public final class ExperienceAPI {
     public static int getXpNeededToLevel(int level, String formulaType) {
         return mcMMO.getFormulaManager().getCachedXpToLevel(level, getFormulaType(formulaType));
     }
+
+    /**
+     * Will add the appropriate type of XP from the block to the player based on the material of the blocks given
+     * @param blockStates the blocks to reward XP for
+     * @param mcMMOPlayer the target player
+     */
+    public static void addXpFromBlocks(ArrayList<BlockState> blockStates, McMMOPlayer mcMMOPlayer)
+    {
+        for(BlockState bs : blockStates)
+        {
+            for(PrimarySkillType skillType : PrimarySkillType.values())
+            {
+                if(ExperienceConfig.getInstance().getXp(skillType, bs.getType()) > 0)
+                {
+                    mcMMOPlayer.applyXpGain(skillType, ExperienceConfig.getInstance().getXp(skillType, bs.getType()), XPGainReason.PVE, XPGainSource.SELF);
+                }
+            }
+        }
+    }
+
+    /**
+     * Will add the appropriate type of XP from the block to the player based on the material of the blocks given if it matches the given skillType
+     * @param blockStates the blocks to reward XP for
+     * @param mcMMOPlayer the target player
+     * @param skillType target primary skill
+     */
+    public static void addXpFromBlocksBySkill(ArrayList<BlockState> blockStates, McMMOPlayer mcMMOPlayer, PrimarySkillType skillType)
+    {
+        for(BlockState bs : blockStates)
+        {
+            if(ExperienceConfig.getInstance().getXp(skillType, bs.getType()) > 0)
+            {
+                mcMMOPlayer.applyXpGain(skillType, ExperienceConfig.getInstance().getXp(skillType, bs.getType()), XPGainReason.PVE, XPGainSource.SELF);
+            }
+        }
+    }
+
+    /**
+     * Will add the appropriate type of XP from the block to the player based on the material of the blocks given
+     * @param blockState The target blockstate
+     * @param mcMMOPlayer The target player
+     */
+    public static void addXpFromBlock(BlockState blockState, McMMOPlayer mcMMOPlayer)
+    {
+        for(PrimarySkillType skillType : PrimarySkillType.values())
+        {
+            if(ExperienceConfig.getInstance().getXp(skillType, blockState.getType()) > 0)
+            {
+                mcMMOPlayer.applyXpGain(skillType, ExperienceConfig.getInstance().getXp(skillType, blockState.getType()), XPGainReason.PVE, XPGainSource.SELF);
+            }
+        }
+    }
+
+    /**
+     * Will add the appropriate type of XP from the block to the player based on the material of the blocks given if it matches the given skillType
+     * @param blockState The target blockstate
+     * @param mcMMOPlayer The target player
+     * @param skillType target primary skill
+     */
+    public static void addXpFromBlockBySkill(BlockState blockState, McMMOPlayer mcMMOPlayer, PrimarySkillType skillType)
+    {
+        if(ExperienceConfig.getInstance().getXp(skillType, blockState.getType()) > 0)
+        {
+            mcMMOPlayer.applyXpGain(skillType, ExperienceConfig.getInstance().getXp(skillType, blockState.getType()), XPGainReason.PVE, XPGainSource.SELF);
+        }
+    }
+
+
 
     // Utility methods follow.
     private static void addOfflineXP(UUID playerUniqueId, PrimarySkillType skill, int XP) {

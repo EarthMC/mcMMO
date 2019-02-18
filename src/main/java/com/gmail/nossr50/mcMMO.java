@@ -33,7 +33,6 @@ import com.gmail.nossr50.skills.repair.repairables.SimpleRepairableManager;
 import com.gmail.nossr50.skills.salvage.salvageables.Salvageable;
 import com.gmail.nossr50.skills.salvage.salvageables.SalvageableManager;
 import com.gmail.nossr50.skills.salvage.salvageables.SimpleSalvageableManager;
-import com.gmail.nossr50.skills.smelting.SmeltingManager;
 import com.gmail.nossr50.util.*;
 import com.gmail.nossr50.util.blockmeta.chunkmeta.ChunkManager;
 import com.gmail.nossr50.util.blockmeta.chunkmeta.ChunkManagerFactory;
@@ -41,11 +40,12 @@ import com.gmail.nossr50.util.commands.CommandRegistrationManager;
 import com.gmail.nossr50.util.experience.FormulaManager;
 import com.gmail.nossr50.util.player.UserManager;
 import com.gmail.nossr50.util.scoreboards.ScoreboardManager;
+import com.gmail.nossr50.util.skills.RankUtils;
 import com.gmail.nossr50.util.upgrade.UpgradeManager;
+import com.gmail.nossr50.worldguard.WorldGuardManager;
 import com.google.common.base.Charsets;
 import net.shatteredlands.shatt.backup.ZipLibrary;
 import org.bstats.bukkit.Metrics;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -70,6 +70,9 @@ public class mcMMO extends JavaPlugin {
     private static HolidayManager     holidayManager;
     private static UpgradeManager     upgradeManager;
 
+    /* Blacklist */
+    private static WorldBlacklist worldBlacklist;
+
     /* File Paths */
     private static String mainDirectory;
     private static String flatFileDirectory;
@@ -90,7 +93,7 @@ public class mcMMO extends JavaPlugin {
     // XP Event Check
     private boolean xpEventEnabled;
 
-    private boolean isRetroModeEnabled;
+    private static boolean isRetroModeEnabled;
 
     /* Metadata Values */
     public final static String entityMetadataKey   = "mcMMO: Spawned Entity";
@@ -181,6 +184,9 @@ public class mcMMO extends JavaPlugin {
                 Permissions.generateWorldTeleportPermissions();
             }
 
+            //Populate Ranked Skill Maps (DO THIS LAST)
+            RankUtils.populateRanks();
+
             //If anonymous statistics are enabled then use them
 
             Metrics metrics;
@@ -207,6 +213,16 @@ public class mcMMO extends JavaPlugin {
 
             getServer().getPluginManager().disablePlugin(this);
         }
+
+        //Init the blacklist
+        worldBlacklist = new WorldBlacklist(this);
+    }
+
+    @Override
+    public void onLoad()
+    {
+        if(getServer().getPluginManager().getPlugin("WorldGuard") != null)
+            WorldGuardManager.getInstance().registerFlags();
     }
 
     /**
@@ -219,7 +235,11 @@ public class mcMMO extends JavaPlugin {
             UserManager.saveAll();      // Make sure to save player information if the server shuts down
             UserManager.clearAll();
             PartyManager.saveParties(); // Save our parties
-            ScoreboardManager.teardownAll();
+
+            //TODO: Needed?
+            if(Config.getInstance().getScoreboardsEnabled())
+                ScoreboardManager.teardownAll();
+
             formulaManager.saveFormula();
             holidayManager.saveAnniversaryFiles();
             placeStore.saveAll();       // Save our metadata
@@ -441,7 +461,7 @@ public class mcMMO extends JavaPlugin {
         pluginManager.registerEvents(new BlockListener(this), this);
         pluginManager.registerEvents(new EntityListener(this), this);
         pluginManager.registerEvents(new InventoryListener(this), this);
-        pluginManager.registerEvents(new SelfListener(), this);
+        pluginManager.registerEvents(new SelfListener(this), this);
         pluginManager.registerEvents(new WorldListener(this), this);
     }
 
@@ -470,14 +490,6 @@ public class mcMMO extends JavaPlugin {
             if (Config.getInstance().getChimaeraEnabled()) {
                 getServer().addRecipe(ChimaeraWing.getChimaeraWingRecipe());
             }
-
-            if (Config.getInstance().getFluxPickaxeEnabled()) {
-                getServer().addRecipe(SmeltingManager.getFluxPickaxeRecipe(Material.DIAMOND_PICKAXE));
-                getServer().addRecipe(SmeltingManager.getFluxPickaxeRecipe(Material.GOLDEN_PICKAXE));
-                getServer().addRecipe(SmeltingManager.getFluxPickaxeRecipe(Material.IRON_PICKAXE));
-                getServer().addRecipe(SmeltingManager.getFluxPickaxeRecipe(Material.STONE_PICKAXE));
-                getServer().addRecipe(SmeltingManager.getFluxPickaxeRecipe(Material.WOODEN_PICKAXE));
-            }
         }, 40);
     }
 
@@ -489,8 +501,8 @@ public class mcMMO extends JavaPlugin {
         // Cleanup the backups folder
         new CleanBackupsTask().runTaskAsynchronously(mcMMO.p);
 
-        // Bleed timer (Runs every two seconds)
-        new BleedTimerTask().runTaskTimer(this, 2 * Misc.TICK_CONVERSION_FACTOR, 2 * Misc.TICK_CONVERSION_FACTOR);
+        // Bleed timer (Runs every 0.5 seconds)
+        new BleedTimerTask().runTaskTimer(this, 1 * Misc.TICK_CONVERSION_FACTOR, 1 * (Misc.TICK_CONVERSION_FACTOR / 2));
 
         // Old & Powerless User remover
         long purgeIntervalTicks = Config.getInstance().getPurgeInterval() * 60L * 60L * Misc.TICK_CONVERSION_FACTOR;
@@ -558,7 +570,11 @@ public class mcMMO extends JavaPlugin {
      * Standard mode is scaled for 1-100
      * @return true if retro mode is enabled
      */
-    public boolean isRetroModeEnabled() {
+    public static boolean isRetroModeEnabled() {
         return isRetroModeEnabled;
+    }
+
+    public static WorldBlacklist getWorldBlacklist() {
+        return worldBlacklist;
     }
 }

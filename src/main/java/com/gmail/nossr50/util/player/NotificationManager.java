@@ -4,14 +4,18 @@ import com.gmail.nossr50.config.AdvancedConfig;
 import com.gmail.nossr50.datatypes.interactions.NotificationType;
 import com.gmail.nossr50.datatypes.player.McMMOPlayer;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
+import com.gmail.nossr50.datatypes.skills.SubSkillType;
 import com.gmail.nossr50.events.skills.McMMOPlayerNotificationEvent;
 import com.gmail.nossr50.util.Misc;
 import com.gmail.nossr50.util.TextComponentFactory;
+import com.gmail.nossr50.util.sounds.SoundManager;
+import com.gmail.nossr50.util.sounds.SoundType;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Server;
+import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
 
 public class NotificationManager {
@@ -24,7 +28,6 @@ public class NotificationManager {
      */
     public static void sendPlayerInformation(Player player, NotificationType notificationType, String key)
     {
-
         ChatMessageType destination = AdvancedConfig.getInstance().doesNotificationUseActionBar(notificationType) ? ChatMessageType.ACTION_BAR : ChatMessageType.SYSTEM;
 
         TextComponent message = TextComponentFactory.getNotificationTextComponentFromLocale(key, notificationType);
@@ -98,11 +101,11 @@ public class NotificationManager {
      * @param skillName skill that leveled up
      * @param newLevel new level of that skill
      */
-    public static void sendPlayerLevelUpNotification(McMMOPlayer mcMMOPlayer, PrimarySkillType skillName, int newLevel)
+    public static void sendPlayerLevelUpNotification(McMMOPlayer mcMMOPlayer, PrimarySkillType skillName, int levelsGained, int newLevel)
     {
         ChatMessageType destination = AdvancedConfig.getInstance().doesNotificationUseActionBar(NotificationType.LEVEL_UP_MESSAGE) ? ChatMessageType.ACTION_BAR : ChatMessageType.SYSTEM;
 
-        TextComponent levelUpTextComponent = TextComponentFactory.getNotificationLevelUpTextComponent(mcMMOPlayer, skillName, newLevel);
+        TextComponent levelUpTextComponent = TextComponentFactory.getNotificationLevelUpTextComponent(skillName, levelsGained, newLevel);
         McMMOPlayerNotificationEvent customEvent = checkNotificationEvent(mcMMOPlayer.getPlayer(), NotificationType.LEVEL_UP_MESSAGE, destination, levelUpTextComponent);
 
         sendNotification(mcMMOPlayer.getPlayer(), customEvent);
@@ -114,5 +117,21 @@ public class NotificationManager {
         {
             player.sendTitle(title, subtitle, i1, i2, i3);
         }
+    }
+
+    public static void sendPlayerUnlockNotification(McMMOPlayer mcMMOPlayer, SubSkillType subSkillType)
+    {
+        //CHAT MESSAGE
+        mcMMOPlayer.getPlayer().spigot().sendMessage(TextComponentFactory.getSubSkillUnlockedNotificationComponents(mcMMOPlayer.getPlayer(), subSkillType));
+
+        //Unlock Sound Effect
+        SoundManager.sendCategorizedSound(mcMMOPlayer.getPlayer(), mcMMOPlayer.getPlayer().getLocation(), SoundType.SKILL_UNLOCKED, SoundCategory.MASTER);
+
+        //ACTION BAR MESSAGE
+        /*if(AdvancedConfig.getInstance().doesNotificationUseActionBar(NotificationType.SUBSKILL_UNLOCKED))
+            mcMMOPlayer.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(LocaleLoader.getString("JSON.SkillUnlockMessage",
+                    subSkillType.getLocaleName(),
+                    String.valueOf(RankUtils.getRank(mcMMOPlayer.getPlayer(),
+                            subSkillType)))));*/
     }
 }

@@ -2,26 +2,31 @@ package com.gmail.nossr50.datatypes.skills.subskills.acrobatics;
 
 import com.gmail.nossr50.config.AdvancedConfig;
 import com.gmail.nossr50.config.Config;
+import com.gmail.nossr50.config.experience.ExperienceConfig;
+import com.gmail.nossr50.datatypes.LimitedSizeList;
+import com.gmail.nossr50.datatypes.experience.XPGainReason;
 import com.gmail.nossr50.datatypes.interactions.NotificationType;
 import com.gmail.nossr50.datatypes.player.McMMOPlayer;
 import com.gmail.nossr50.datatypes.player.PlayerProfile;
 import com.gmail.nossr50.datatypes.skills.SubSkillType;
-import com.gmail.nossr50.datatypes.skills.XPGainReason;
-import com.gmail.nossr50.datatypes.skills.subskills.interfaces.RandomChance;
 import com.gmail.nossr50.locale.LocaleLoader;
 import com.gmail.nossr50.mcMMO;
-import com.gmail.nossr50.skills.acrobatics.Acrobatics;
 import com.gmail.nossr50.util.EventUtils;
-import com.gmail.nossr50.util.Misc;
 import com.gmail.nossr50.util.Permissions;
 import com.gmail.nossr50.util.player.NotificationManager;
 import com.gmail.nossr50.util.player.UserManager;
+import com.gmail.nossr50.util.random.RandomChanceSkill;
+import com.gmail.nossr50.util.random.RandomChanceUtil;
 import com.gmail.nossr50.util.skills.PerksUtils;
+import com.gmail.nossr50.util.skills.RankUtils;
 import com.gmail.nossr50.util.skills.SkillActivationType;
 import com.gmail.nossr50.util.skills.SkillUtils;
+import com.gmail.nossr50.util.sounds.SoundManager;
+import com.gmail.nossr50.util.sounds.SoundType;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.SoundCategory;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -29,12 +34,14 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
 
-public class Roll extends AcrobaticsSubSkill implements RandomChance {
-    private int fallTries = 0;
-    protected Location lastFallLocation;
+import java.util.HashMap;
+
+public class Roll extends AcrobaticsSubSkill {
+    protected HashMap<Player, LimitedSizeList> fallLocationMap;
 
     public Roll() {
-        super("Roll", EventPriority.HIGHEST);
+        super("Roll", EventPriority.HIGHEST, SubSkillType.ACROBATICS_ROLL);
+        fallLocationMap = new HashMap<>();
     }
 
     /**
@@ -71,7 +78,6 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
                  */
                 Player player = (Player) ((EntityDamageEvent) event).getEntity();
                 if (canRoll(player)) {
-                    if(Permissions.isSubSkillEnabled(player, SubSkillType.ACROBATICS_ROLL))
                     entityDamageEvent.setDamage(rollCheck(player, mcMMOPlayer, entityDamageEvent.getDamage()));
 
                     if (entityDamageEvent.getFinalDamage() == 0) {
@@ -124,18 +130,14 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
         float skillValue = playerProfile.getSkillLevel(getPrimarySkill());
         boolean isLucky = Permissions.lucky(player, getPrimarySkill());
 
-        String[] rollStrings = SkillUtils.calculateAbilityDisplayValues(skillValue, SubSkillType.ACROBATICS_ROLL, isLucky);
+        String[] rollStrings = RandomChanceUtil.calculateAbilityDisplayValues(SkillActivationType.RANDOM_LINEAR_100_SCALE_WITH_CAP, player, SubSkillType.ACROBATICS_ROLL);
         rollChance = rollStrings[0];
         rollChanceLucky = rollStrings[1];
 
         /*
          * Graceful is double the odds of a normal roll
          */
-        String[] gracefulRollStrings = SkillUtils.calculateAbilityDisplayValuesCustom(skillValue,
-                SubSkillType.ACROBATICS_ROLL,
-                isLucky,
-                AdvancedConfig.getInstance().getMaxBonusLevel(this) / 2,
-                AdvancedConfig.getInstance().getMaxChance(this));
+        String[] gracefulRollStrings = RandomChanceUtil.calculateAbilityDisplayValuesCustom(SkillActivationType.RANDOM_LINEAR_100_SCALE_WITH_CAP, player, SubSkillType.ACROBATICS_ROLL, 2.0D);
         gracefulRollChance = gracefulRollStrings[0];
         gracefulRollChanceLucky = gracefulRollStrings[1];
 
@@ -166,28 +168,6 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
 
     }
 
-    /**
-     * Gets the maximum chance for this interaction to succeed
-     *
-     * @return maximum chance for this outcome to succeed
-     */
-    @Override
-    public double getRandomChanceMaxChance() {
-        return AdvancedConfig.getInstance().getMaxChance(this);
-    }
-
-    /**
-     * The maximum bonus level for this skill
-     * This is when the skills level no longer increases the odds of success
-     * For example, setting this to 25 will mean the RandomChance success chance no longer grows after 25
-     *
-     * @return the maximum bonus from skill level for this skill
-     */
-    @Override
-    public int getRandomChanceMaxBonus() {
-        return AdvancedConfig.getInstance().getMaxBonusLevel(this);
-    }
-
     @Override
     public boolean isSuperAbility() {
         return false;
@@ -204,7 +184,7 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
     }
 
     private boolean canRoll(Player player) {
-        return !isExploiting(player) && Permissions.isSubSkillEnabled(player, SubSkillType.ACROBATICS_ROLL);
+        return RankUtils.hasUnlockedSubskill(player, SubSkillType.ACROBATICS_ROLL) && Permissions.isSubSkillEnabled(player, SubSkillType.ACROBATICS_ROLL);
     }
 
     /**
@@ -221,26 +201,30 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
             return gracefulRollCheck(player, mcMMOPlayer, damage, skillLevel);
         }
 
-        double modifiedDamage = calculateModifiedRollDamage(damage, Acrobatics.rollThreshold);
+        double modifiedDamage = calculateModifiedRollDamage(damage, AdvancedConfig.getInstance().getRollDamageThreshold());
 
-        if (!isFatal(player, modifiedDamage) && SkillUtils.isActivationSuccessful(SkillActivationType.RANDOM_LINEAR_100_SCALE_WITH_CAP, SubSkillType.ACROBATICS_ROLL, player, getPrimarySkill(), skillLevel, getActivationChance(mcMMOPlayer))) {
+        if (!isFatal(player, modifiedDamage)
+                && RandomChanceUtil.isActivationSuccessful(SkillActivationType.RANDOM_LINEAR_100_SCALE_WITH_CAP, SubSkillType.ACROBATICS_ROLL, player)) {
             NotificationManager.sendPlayerInformation(player, NotificationType.SUBSKILL_MESSAGE, "Acrobatics.Roll.Text");
+            SoundManager.sendCategorizedSound(player, player.getLocation(), SoundType.ROLL_ACTIVATED, SoundCategory.PLAYERS);
             //player.sendMessage(LocaleLoader.getString("Acrobatics.Roll.Text"));
 
-            if (!SkillUtils.cooldownExpired((long) mcMMOPlayer.getTeleportATS(), Config.getInstance().getXPAfterTeleportCooldown())) {
+            //if (!SkillUtils.cooldownExpired((long) mcMMOPlayer.getTeleportATS(), Config.getInstance().getXPAfterTeleportCooldown())) {
+            if(!isExploiting(player))
                 SkillUtils.applyXpGain(mcMMOPlayer, getPrimarySkill(), calculateRollXP(player, damage, true), XPGainReason.PVE);
-            }
+            //}
 
+            addFallLocation(player);
             return modifiedDamage;
         }
         else if (!isFatal(player, damage)) {
-            if (!SkillUtils.cooldownExpired((long) mcMMOPlayer.getTeleportATS(), Config.getInstance().getXPAfterTeleportCooldown())) {
+            //if (!SkillUtils.cooldownExpired((long) mcMMOPlayer.getTeleportATS(), Config.getInstance().getXPAfterTeleportCooldown())) {
+            if(!isExploiting(player))
                 SkillUtils.applyXpGain(mcMMOPlayer, getPrimarySkill(), calculateRollXP(player, damage, false), XPGainReason.PVE);
-            }
+            //}
         }
 
-        lastFallLocation = player.getLocation();
-
+        addFallLocation(player);
         return damage;
     }
 
@@ -255,21 +239,27 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
      * @return the modified event damage if the ability was successful, the original event damage otherwise
      */
     private double gracefulRollCheck(Player player, McMMOPlayer mcMMOPlayer, double damage, int skillLevel) {
-        double modifiedDamage = calculateModifiedRollDamage(damage, Acrobatics.gracefulRollThreshold);
+        double modifiedDamage = calculateModifiedRollDamage(damage, AdvancedConfig.getInstance().getRollDamageThreshold() * 2);
+
+        RandomChanceSkill rcs = new RandomChanceSkill(player, subSkillType);
+        rcs.setSkillLevel(rcs.getSkillLevel() * 2); //Double the effective odds
 
         if (!isFatal(player, modifiedDamage)
-                && SkillUtils.isActivationSuccessfulCustom(player,
-                this,
-                AdvancedConfig.getInstance().getMaxChance(SubSkillType.ACROBATICS_ROLL),
-                AdvancedConfig.getInstance().getMaxBonusLevel(SubSkillType.ACROBATICS_ROLL) / 2)) //This effectively makes it so you reach the max chance for success at half the requirements of roll's max chance (which would make graceful roll twice as likely per skill level)
+                && RandomChanceUtil.checkRandomChanceExecutionSuccess(rcs))
         {
             NotificationManager.sendPlayerInformation(player, NotificationType.SUBSKILL_MESSAGE, "Acrobatics.Ability.Proc");
-            SkillUtils.applyXpGain(mcMMOPlayer, getPrimarySkill(), calculateRollXP(player, damage, true), XPGainReason.PVE);
+            SoundManager.sendCategorizedSound(player, player.getLocation(), SoundType.ROLL_ACTIVATED, SoundCategory.PLAYERS,0.5F);
+            if(!isExploiting(player))
+                SkillUtils.applyXpGain(mcMMOPlayer, getPrimarySkill(), calculateRollXP(player, damage, true), XPGainReason.PVE);
 
+            addFallLocation(player);
             return modifiedDamage;
         }
         else if (!isFatal(player, damage)) {
-            SkillUtils.applyXpGain(mcMMOPlayer, getPrimarySkill(), calculateRollXP(player, damage, false), XPGainReason.PVE);
+            if(!isExploiting(player))
+                SkillUtils.applyXpGain(mcMMOPlayer, getPrimarySkill(), calculateRollXP(player, damage, false), XPGainReason.PVE);
+            
+            addFallLocation(player);
         }
 
         return damage;
@@ -290,6 +280,16 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
             return true;
         }
 
+        if(fallLocationMap.get(player) == null)
+            fallLocationMap.put(player, new LimitedSizeList(50));
+
+        LimitedSizeList fallLocations = fallLocationMap.get(player);
+        
+        if(fallLocations.contains(getBlockLocation(player)))
+            return true;
+
+        return false; //NOT EXPLOITING
+/*
         Location fallLocation = player.getLocation();
         int maxTries = Config.getInstance().getAcrobaticsAFKMaxTries();
 
@@ -298,15 +298,15 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
         fallTries = sameLocation ? Math.min(fallTries + 1, maxTries) : Math.max(fallTries - 1, 0);
         lastFallLocation = fallLocation;
 
-        return fallTries + 1 > maxTries;
+        return fallTries + 1 > maxTries;*/
     }
 
     private float calculateRollXP(Player player, double damage, boolean isRoll) {
         ItemStack boots = player.getInventory().getBoots();
-        float xp = (float) (damage * (isRoll ? Acrobatics.rollXpModifier : Acrobatics.fallXpModifier));
+        float xp = (float) (damage * (isRoll ? ExperienceConfig.getInstance().getRollXPModifier() : ExperienceConfig.getInstance().getFallXPModifier()));
 
         if (boots != null && boots.containsEnchantment(Enchantment.PROTECTION_FALL)) {
-            xp *= Acrobatics.featherFallXPModifier;
+            xp *= ExperienceConfig.getInstance().getFeatherFallXPModifier();
         }
 
         return xp;
@@ -353,6 +353,7 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
 
     /**
      * Returns a collection of strings about how a skill works
+     * Used in the MMO Info command
      *
      * @return
      */
@@ -372,20 +373,31 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
             MaxBonusLevel: 100
             DamageThreshold: 7.0
          */
-        double rollChanceHalfMax, graceChanceHalfMax, maxBonusLevel, curve, damageThreshold, chancePerLevel;
+        double rollChanceHalfMax, graceChanceHalfMax, damageThreshold, chancePerLevel;
 
-        curve = AdvancedConfig.getInstance().getMaxChance(this);
-        maxBonusLevel = (double) AdvancedConfig.getInstance().getMaxBonusLevel(this);
+        //Chance to roll at half max skill
+        RandomChanceSkill rollHalfMaxSkill = new RandomChanceSkill(null, subSkillType);
+        int halfMaxSkillValue = mcMMO.isRetroModeEnabled() ? 500 : 50;
+        rollHalfMaxSkill.setSkillLevel(halfMaxSkillValue);
 
-        //Chance
-        rollChanceHalfMax   = 100 * SkillUtils.getChanceOfSuccess(maxBonusLevel / 2, maxBonusLevel, curve);
-        graceChanceHalfMax  = 100 * SkillUtils.getChanceOfSuccess(maxBonusLevel / 2, maxBonusLevel, curve / 2);
-        damageThreshold     = AdvancedConfig.getInstance().getRollDamageThreshold();
+        //Chance to graceful roll at full skill
+        RandomChanceSkill rollGraceHalfMaxSkill = new RandomChanceSkill(null, subSkillType);
+        rollGraceHalfMaxSkill.setSkillLevel(halfMaxSkillValue * 2); //Double the effective odds
 
-        chancePerLevel = (1/curve) * maxBonusLevel;
+        //Chance to roll per level
+        RandomChanceSkill rollOneSkillLevel = new RandomChanceSkill(null, subSkillType);
+        rollGraceHalfMaxSkill.setSkillLevel(1); //Level 1 skill
 
+        //Chance Stat Calculations
+        rollChanceHalfMax       = RandomChanceUtil.getRandomChanceExecutionChance(rollHalfMaxSkill);
+        graceChanceHalfMax      = RandomChanceUtil.getRandomChanceExecutionChance(rollGraceHalfMaxSkill);
+        damageThreshold         = AdvancedConfig.getInstance().getRollDamageThreshold();
 
-        return LocaleLoader.getString("Acrobatics.SubSkill.Roll.Mechanics", rollChanceHalfMax, graceChanceHalfMax, maxBonusLevel, chancePerLevel, damageThreshold, damageThreshold * 2);
+        chancePerLevel          = RandomChanceUtil.getRandomChanceExecutionChance(rollOneSkillLevel);
+
+        double maxLevel         = AdvancedConfig.getInstance().getMaxBonusLevel(SubSkillType.ACROBATICS_ROLL);
+
+        return LocaleLoader.getString("Acrobatics.SubSkill.Roll.Mechanics", rollChanceHalfMax, graceChanceHalfMax, maxLevel, chancePerLevel, damageThreshold, damageThreshold * 2);
     }
 
     /**
@@ -397,15 +409,34 @@ public class Roll extends AcrobaticsSubSkill implements RandomChance {
     @Override
     public Double[] getStats(Player player)
     {
-        double curve, maxBonusLevel, playerChanceRoll, playerChanceGrace;
+        double playerChanceRoll, playerChanceGrace;
 
-        curve = AdvancedConfig.getInstance().getMaxChance(this);
-        maxBonusLevel = (double) AdvancedConfig.getInstance().getMaxBonusLevel(this);
+        RandomChanceSkill roll          = new RandomChanceSkill(player, getSubSkillType());
+        RandomChanceSkill graceful      = new RandomChanceSkill(player, getSubSkillType());
 
-        playerChanceRoll        = 100 * SkillUtils.getChanceOfSuccess(UserManager.getPlayer(player).getSkillLevel(getPrimarySkill()), maxBonusLevel, curve);
-        playerChanceGrace       = 100 * SkillUtils.getChanceOfSuccess(UserManager.getPlayer(player).getSkillLevel(getPrimarySkill()), maxBonusLevel, curve / 2);
+        graceful.setSkillLevel(graceful.getSkillLevel() * 2); //Double odds
 
-        Double[] stats = { playerChanceRoll, playerChanceGrace};
+        //Calculate
+        playerChanceRoll        = RandomChanceUtil.getRandomChanceExecutionChance(roll);
+        playerChanceGrace       = RandomChanceUtil.getRandomChanceExecutionChance(graceful);
+
+        Double[] stats = { playerChanceRoll, playerChanceGrace }; //DEBUG
         return stats;
+    }
+
+    public void addFallLocation(Player player)
+    {
+        if(fallLocationMap.get(player) == null)
+            fallLocationMap.put(player, new LimitedSizeList(50));
+
+        LimitedSizeList fallLocations = fallLocationMap.get(player);
+
+        Location loc = getBlockLocation(player);
+        fallLocations.add(loc);
+    }
+
+    public Location getBlockLocation(Player player)
+    {
+        return player.getLocation().getBlock().getLocation();
     }
 }

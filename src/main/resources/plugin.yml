@@ -14,7 +14,7 @@ author: nossr50
 authors: [GJ, NuclearW, bm01, Glitchfinder, TfT_02, t00thpick1, Riking]
 website: https://www.mcmmo.org
 main: com.gmail.nossr50.mcMMO
-softdepend: [CombatTag, HealthBar]
+softdepend: [WorldGuard, CombatTag, HealthBar]
 load: STARTUP
 api-version: 1.13
 
@@ -157,10 +157,6 @@ commands:
         aliases: [notify]
         description: Toggle mcMMO abilities chat display notifications on/off
         permission: mcmmo.commands.mcnotify
-    mobhealth:
-        aliases: [mcmobhealth]
-        description: Change the style of the mob healthbar
-        permission: mcmmo.commands.mobhealth
     mhd:
         description: Sets all players mob health settings to default
         permission: mcmmo.commands.mhd
@@ -168,10 +164,6 @@ commands:
         aliases: [mcsb]
         description: Manage your mcMMO Scoreboard
         permission: mcmmo.commands.mcscoreboard
-    kraken:
-        aliases: [mckraken]
-        description: Unleash the kraken!
-        permission: mcmmo.commands.kraken
     mcfools:
         aliases: [macho, jumping, throwing, wrecking, crafting, walking, swimming, falling, climbing, flying, diving, piggy]
         description: Deploy jokes
@@ -294,10 +286,10 @@ permissions:
         description: Allows access to all Excavation abilities
         children:
             mcmmo.ability.excavation.gigadrillbreaker: true
-            mcmmo.ability.excavation.treasurehunter: true
+            mcmmo.ability.excavation.archaeology: true
     mcmmo.ability.excavation.gigadrillbreaker:
         description: Allows access to the Giga Drill Breaker ability
-    mcmmo.ability.excavation.treasurehunter:
+    mcmmo.ability.excavation.archaeology:
         description: Allows treasure drops from Excavation
     mcmmo.ability.fishing.*:
         default: false
@@ -568,10 +560,10 @@ permissions:
     mcmmo.ability.swords.all:
         description: Allows access to all Swords abilities
         children:
-            mcmmo.ability.swords.bleed: true
+            mcmmo.ability.swords.rupture: true
             mcmmo.ability.swords.counterattack: true
             mcmmo.ability.swords.serratedstrikes: true
-    mcmmo.ability.swords.bleed:
+    mcmmo.ability.swords.rupture:
         description: Allows access to the Bleed ability
     mcmmo.ability.swords.counterattack:
         description: Allows access to the Counter Attack ability
@@ -586,7 +578,7 @@ permissions:
         description: Allows access to all Taming abilities
         children:
             mcmmo.ability.taming.beastlore: true
-            mcmmo.ability.taming.callofthewild.all: true
+            mcmmo.ability.taming.callofthewild: true
             mcmmo.ability.taming.environmentallyaware: true
             mcmmo.ability.taming.fastfoodservice: true
             mcmmo.ability.taming.gore: true
@@ -601,13 +593,8 @@ permissions:
         default: false
         description: Allows access to the Call of the Wild ability
         children:
-            mcmmo.ability.taming.callofthewild.all: true
+            mcmmo.ability.taming.callofthewild: true
     mcmmo.ability.taming.callofthewild:
-        default: false
-        description: Allows access to the Call of the Wild ability
-        children:
-            mcmmo.ability.taming.callofthewild.all: true
-    mcmmo.ability.taming.callofthewild.all:
         description: Allows access to the Call of the Wild abilities
         children:
             mcmmo.ability.taming.callofthewild.horse: true
@@ -708,8 +695,6 @@ permissions:
             mcmmo.bypass.partylimit: true
             mcmmo.bypass.arcanebypass: true
             mcmmo.bypass.hardcoremode: true
-            mcmmo.bypass.kraken: true
-            mcmmo.bypass.fishingtraps: true
             mcmmo.commands.inspect.far: true
             mcmmo.commands.inspect.hidden: true
             mcmmo.commands.inspect.offline: true
@@ -722,12 +707,6 @@ permissions:
     mcmmo.bypass.hardcoremode:
         default: false
         description: Allows user to bypass negative penalties of Hardcore mode
-    mcmmo.bypass.kraken:
-        default: false
-        description: Allows user to bypass the effects of the exploit prevention when Fishing
-    mcmmo.bypass.fishingtraps:
-        default: false
-        description: Allows user to bypass finding traps when Fishing
     mcmmo.chat.*:
         default: false
         description: Implies all mcmmo.chat permissions. (Warning, contains adminchat)
@@ -776,7 +755,6 @@ permissions:
             mcmmo.commands.mcstats: true
             mcmmo.commands.mctop.all: true
             mcmmo.commands.mining: true
-            mcmmo.commands.mobhealth: true
             mcmmo.commands.party.all: true
             mcmmo.commands.ptp.all: true
             mcmmo.commands.repair: true
@@ -798,8 +776,6 @@ permissions:
             mcmmo.commands.inspect.far: true
             mcmmo.commands.inspect.hidden: true
             mcmmo.commands.inspect.offline: true
-            mcmmo.commands.kraken: true
-            mcmmo.commands.kraken.others: true
             mcmmo.commands.mcability.others: true
             mcmmo.commands.mcconvert.all: true
             mcmmo.commands.mcchatspy: true
@@ -879,10 +855,6 @@ permissions:
         description: Allows access to the inspect command for hidden players
     mcmmo.commands.inspect.offline:
         description: Allows access to the inspect command for offline players
-    mcmmo.commands.kraken:
-        description: Allows access to the kraken command
-    mcmmo.commands.kraken.others:
-        description: Allows access to the kraken command for other players
     mcmmo.commands.mcability:
         description: Allows access to the mcability command
     mcmmo.commands.mcability.others:
@@ -1024,8 +996,6 @@ permissions:
         description: Allows access to the mmoedit command for other players
     mcmmo.commands.mmoshowdb:
         description: Allows access to the mmoshowdb command
-    mcmmo.commands.mobhealth:
-         description: Allows access to the mobhealth command
     mcmmo.commands.mhd:
         default: false
         description: Allows access to the mhd command
@@ -1300,7 +1270,6 @@ permissions:
         children:
             mcmmo.chat.partychat: true
             mcmmo.commands.defaults: true
-            mcmmo.mobhealthdisplay: true
             mcmmo.motd: true 
             mcmmo.skills.all: true
     mcmmo.defaultsop:
@@ -1322,8 +1291,6 @@ permissions:
             mcmmo.item.chimaerawing: true
     mcmmo.item.chimaerawing:
         description: Allows use of Chimaera Wing item
-    mcmmo.mobhealthdisplay:
-         description: Allows viewing of mob health display during combat
     mcmmo.party.*:
         default: false
         description: Implies access to all mcmmo party permissions

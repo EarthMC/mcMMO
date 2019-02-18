@@ -72,7 +72,7 @@ public class SalvageConfig extends ConfigLoader {
             }
             else {
                 try {
-                    salvageMaterialType = MaterialType.valueOf(salvageMaterialTypeString);
+                    salvageMaterialType = MaterialType.valueOf(salvageMaterialTypeString.replace(" ", "_").toUpperCase());
                 }
                 catch (IllegalArgumentException ex) {
                     reason.add(key + " has an invalid MaterialType of " + salvageMaterialTypeString);
@@ -106,7 +106,7 @@ public class SalvageConfig extends ConfigLoader {
             }
             else {
                 try {
-                    salvageItemType = ItemType.valueOf(salvageItemTypeString);
+                    salvageItemType = ItemType.valueOf(salvageItemTypeString.replace(" ", "_").toUpperCase());
                 }
                 catch (IllegalArgumentException ex) {
                     reason.add(key + " has an invalid ItemType of " + salvageItemTypeString);
@@ -125,7 +125,7 @@ public class SalvageConfig extends ConfigLoader {
             int maximumQuantity = (itemMaterial != null ? SkillUtils.getRepairAndSalvageQuantities(new ItemStack(itemMaterial), salvageMaterial, salvageMetadata) : config.getInt("Salvageables." + key + ".MaximumQuantity", 2));
 
             if (maximumQuantity <= 0 && itemMaterial != null) {
-                maximumQuantity = config.getInt("Salvageables." + key + ".MaximumQuantity", 2);
+                maximumQuantity = config.getInt("Salvageables." + key + ".MaximumQuantity", 1);
             }
 
             int configMaximumQuantity = config.getInt("Salvageables." + key + ".MaximumQuantity", -1);

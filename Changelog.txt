@@ -7,7 +7,136 @@ Key:
   ! Change
   - Removal
 
+Version 2.1.12
+    Salvage config entries are no longer case sensitive
+    Fixed a bug where Fishing was not rewarding vanilla XP orbs
+
+Version 2.1.11
+    Fixed a bug where Rupture was using the wrong permission node (new permission node: mcmmo.ability.swords.rupture)
+
+Version 2.1.10
+    Fishing command did an oopsie
+    Endstone now gives the same XP as Stone (update your experience.yml)
+
+Version 2.1.9
+    Fixed a bug where grabbing the version of WG would throw classnotdefined errors
+
+Version 2.1.8
+    mcMMO now checks for WG 7 before attempting to use the WG API
+    Made some optimizations for our WG integration
+    Fixed a bug where Bite chance for Master Angler was displaying too many decimal places
+    Fixed a bug where Abilities didn't check for permission nodes before activating
+    MaxBonusLevel now has specific entries for Standard and Retro in advanced.yml
+    MaxBonusLevel for Critical Strikes changed from 75/750 to 100/1000
+    MaxBonusLevel of Dodge changed from 80/800 to 100/1000
+    MaxBonusLevel of Rupture changed from 20/200 to 100/1000
+    MaxBonusLevel of Counter Attack changed from 60/600 to 100/1000
+
+Version 2.1.7
+    Fixed an almost 6 year old bug where Salvage materials did not have a defined material count so they defaulted to 2 (which could lead to shovels giving back more diamonds than normal)
+    Added spam detection for Unarmed's bonus damage and disarm
+    Corrected an error where master angler for retro only required level 150 instead of 500 (update your skillranks.yml)
+    Fixed a bug where Players could see hidden party members in the party member listings
+    (API) Added addXpFromBlocks to ExperienceAPI to help make adding XP for a player easier
+    (API) Added addXpFromBlocksBySkill to ExperienceAPI to help make adding XP for a player easier
+    (API) Added addXpFromBlock to ExperienceAPI to help make adding XP for a player easier
+    (API) Added addXpFromBlockBySkill to ExperienceAPI to help make adding XP for a player easier
+
+Version 2.1.6
+    Fixed a bug where Arcane Salvage could never fail
+    Recolored some lines in the locale related to failure from white to red
+    Fixed a bug where Salvage was giving back too many resources
+    SubSkillFailure renamed to SubSkillFailed in config.yml
+    SubSkillFailed now sends copies to chat by default
+    SubSkillFailed no longer sends messages to the action bar by default
+
+Version 2.1.5
+    mcMMO no longer ignores cancelled events relating to the player left or right clicking
+
+Version 2.1.4
+    Fixed a bug where Alchemy didn't gain XP
+    Fixed a bug where Archery gained XP from mob spawned entities
+    Fixed a display bug with Roll on /acrobatics command
+    Fixed a display bug for bite chance on Fishing
+    Fixed a display bug for treasure drop chances on Fishing
+    Fixed a display bug for Arcane Forging on Repair
+    Fixed a display bug for Super Repair on Repair
+    Fixed a display bug for Repair Mastery on Repair
+    Fixed a display bug for Second Smelt on Smelting
+    Repair Mastery now uses a rank system
+    Super Repair now uses a rank system
+    Changed the stat for bite chance to be more clear that its additive chance
+    Fixed Styling for the /salvage command
+    Temporarily disabled Flux Mining
+    Removed XP from entities that target endermite to prevent easy exploitation (Credits to TheBentoBox for the tip!) [Can be turned off in experience.yml]
+    Fixed a bug where static chance skills like Arcane Salvage were using incorrect calculations for success
+    Advanced Salvage now uses a rank system
+    Arcane Salvage now goes by your rank to determine the maximum amount of materials salvaged and is no longer percentage based
+    Fixed a bug where Iron Arm was checking for Iron Grip to be unlocked instead of itself
+    (Plugin Compatibility) mcMMO no longer ignores cancelled block place events (this is to prevent XP gains from placed blocks)
+    (Plugin Compatibility) mcMMO now ignores cancelled events relating to the player left or right clicking
+    (Locale) Changed the string for "Salvage.Ability.Bonus.1" to fit the new material recovery mechanics of Salvage
+    (Config) Added a toggle for the new endermite enderman xp farm fix in experience.yml "ExploitFix.EndermanEndermiteFarms"
+    (Config) Cleaned up some leftover 'unlocklevel' settings, this stuff is now handled in skillranks.yml
+    (Config) Removed Salvage.MaxPercentage
+    (Config) Removed Salvage.MaxPercentageChance
+    (Config) Added Salvage.ArcaneSalvage.MaxBonusLevel
+    (Config) Added Salvage.ArcaneSalvage.MaxChance
+
+Version 2.1.3
+    Temporarily removed the unarmed no-item pickup feature until its fixed
+
+Version 2.1.2
+    (Compatibility) mcMMO now deals custom damage type for all damage sources to be more compatible with other plugins (such as anti-cheat)
+    (Perks) Fixed a bug where the Lucky perk wasn't adding to success
+    (Skills) mcMMO will now listen to cancelled events to remove our temporary enchantments from tools
+    (Skills) Fixing a bug where Shake didn't calculate success correctly
+    (Skills) Fixed a bug where Arcane Forging didn't calculate success and failure correctly
+    (Skills) Fixed a bug where Salvage didn't calculate success and failure correctly
+    (Skills) Fixed a bug where Flux Mining didn't calculate success correctly
+    (Skills) Fixed a bug where Shake didn't calculate correctly
+    (Skills) Fixed a bug where Pummel didn't calculate correctly
+    (Skills) Tree Feller now works on Mushroom Stems
+    (Skills) Fixed a bug where magic chance would show as null
+    (Skills) Fixed a bug where Trap percentages were added to Fishing even though they no longer exist
+    (Skills) Magic Hunter now uses a rank system
+    (Skills) Fixed a bug where Magic Hunter would work without treasure hunter
+    (Skills) As long are you are empty handed mcMMO will no longer put items into your hands
+    (Skills) Improved the styling on /smelting
+    (Skills) Iron Arm Style can now reach a bonus damage of 10 (up from 8)
+    (Skills) Iron Arm Style now uses a rank system
+    (Skills) Iron Grip now uses a rank system
+    (Skills) Disarm now uses a rank system
+    (Skills) Arrow Deflect now uses a rank system
+    (Skills) Flux Mining is now a passive effect when you mine ore instead of requiring a special pickaxe
+    (Skills) Removed the Flux Mining mcMMO Pickaxe Item
+    (Style) Locked skills now are styled differently in the skill command display
+    (Experience) Phantoms have been added to the default experience.yml with a value of 4.0 (update your config!)
+    (Experience) Default XP value for witch set to 0.1 instead of 0.0
+    (Experience) Default XP value for ender dragon set to 1.0 instead of 0.0
+    (Style) Added @ symbol styling for hover tooltips to the locale
+    (Style) Added the skill names in the skill commands display to the locale so it can now be edited and styled
+    (Experience) Renamed Grass to Grass_Block in treasures.yml to allow grass to give items again (update your configs manually or delete to regen)
+    (Experience) Wood blocks now give XP and are affected by Tree Feller (6 sided bark blocks)
+    (API) Moved XPGainReason from skills to experience package
+    (API) Added XpGainSource for tracking sources of XP
+    (API) You can now specify XpGainSource when adding xp to players
+    (Config) The Extra Stats option for XP bars now overrides the setting for updating XP bars every time XP is gained
+    (Config) Added an option for Party XP gains to not update XP bars
+    (Config) Added an option for Passive XP gains to not update XP bars (smelting/brewing)
+    (Config) Added warnings if mcMMO finds a MaxBonusLevel of 0 for any skill that incorporates RNG
+    (Config) Removed config options for Iron Arm
+    (Config) Removed the options related to the Flux Mining Item
+    (Config) Second Smelt has a max activation chance of 50% instead of 100% (you can update your configs or gen new ones to get this change)
+
+Version 2.1.1
+    = Fixed an issue where excavation wasn't using the correct permission node
+    = Added protection against AFK fishing
+    = Acrobatics now uses much better anti-exploit detection
+
 Version 2.1.0
+ + mcMMO now features XP bars! Configurable in experience.yml
+ + Locale files now support & codes for colors and formatting!
  + Prevented exploits involving blocks made from entities (snowmen, etc..)
  + Added JSON integration to all Skill Commands
  + Added config setting to enable or disable old mcMMO skill scaling (General.RetroMode) this is on by default for existing installs
@@ -15,6 +144,15 @@ Version 2.1.0
  + Added links to mcMMO related websites to various commands
  + Certain elements of mcMMO's UI have been restyled
  + Added the tagline "Overhaul Era" to various locations until 3.0.0 comes out
+ + You can now disable mcMMO completely for specific worlds via world_blacklist.txt in /plugins/mcMMO/
+ + (WorldGuard) mcMMO now supports worldguard, you can use the flags "mcmmo" and "mcmmo-xp" on regions (they default to on unless otherwise specified)
+ ! (Scoreboards) Scoreboards are now disabled by default, I don't like them. You can turn them back on in config.yml
+ + (Sounds) Rolling now plays a sound (Graceful Roll has a different sound :) )
+ + (Sounds) Activating Super abilities plays a sound (other plays can hear this)
+ + (Sounds) Skill Unlock Notifications have sounds
+ + (Sounds) Readying a tool for a super ability now plays a sound
+ + (Sounds) Bleed DOT now plays a sound
+ + (Experience) mcMMO now notifies you when you progress in a skill!
  + (Experience) Coral (blocks) now give Mining XP
  + (Experience) Coral (plants) now give Herbalism XP
  + (Experience) Blue Ice now gives Mining XP
@@ -24,10 +162,25 @@ Version 2.1.0
  + (Events) Starting an XP event will now use the title API (toggle this in advanced.yml)
  + (Sound) Volume and Pitch of sounds can now be configured in the new sounds.yml file
  + (MySQL) Added support for SSL for MySQL/MariaDB (On by default)
- + (Skills) Adding a new subskill to child skills called 'Understanding The Art' this adds nothing new, but tracks your progress in that child skill, which was previous a bit obfuscated.
+ ! (Skills) Taming's Gore now uses Rupture Rank 1 for its DoT calculations
+ ! (Skills) Sword's Bleed has been renamed to Rupture
+ ! (Skills) Sword's Rupture no longer has an internal hard coded limit
+ ! (Skills) Sword's Serrated Strikes now uses your Rupture rank to determine the damage/ticks for its bleed effect.
+ ! (Skills) Sword's Rupture now ticks four times as fast
+ ! (Skills) Sword's Rupture now refreshes bleed duration instead of adding duration when applying bleed to the same target
+ ! (Skills) Sword's Rupture will now deal lethal damage
+ = (Skills) Fixed a bug where Rupture would apply an incorrect amount of bleed ticks
+ ! (Skills) Sword's Rupture now reaches its max proc chance at level 20 (200 in Retro)
+ ! (Skills) Sword's Rupture now has a max chance to proc of 33% instead of 70%
+ ! (Skills) Sword's Rupture now deals 50% more damage at above Rank 3 and can last much longer! The base damage for Bleed has been increased as well (update your advanced.yml admins)
+ ! (Skills) Sword's Rupture no longer triggers invincibility frames when damaging your opponent
+ = (Skills) Furnaces now give XP to the last person to modify their inventory instead of the first person to open them
+ + (Skills) Ability Lengths now have a default skill cap at which they stop increasing in length, configurable in advanced.yml (endurance perks extend this limit)
+ + (Skills) Added a new subskill to some skills 'Understanding The Art' this adds nothing new, but tracks benefits that increase together that seemed unrelated, which was previously a bit obfuscated.
  + (Skills) Tool alerts now are sent to the Action Bar
  + (Skills) Super Ability activation alerts are now sent to the Action Bar
  + (Skills) Certain Skill messages are now sent to the Action Bar
+ + (Skills) Added some missing information to skill stats
  + (Config) Skill Rank requirements are now defined in skillranks.yml you cannot add or remove ranks from this file
  + (Config) Added option to use SSL for MySQL in config.yml
  + (Config) Added option to disable the new URL links to config.yml
@@ -43,6 +196,7 @@ Version 2.1.0
  + (Permissions) Added permission node mcmmo.commands.mcchatspy & mcmmo.commands.mcchatspy.others
  + (Permissions) Added permission nodes for Harvest Lumber, Splinter, Nature's Bounty, and Bark Surgeon
  + (Permissions) Added mcmmo.commands.mmoinfo for the new mmoinfo/mcinfo command
+ ! (Permissions) Call of the wild now uses mcmmo.ability.taming.callofthewild instead of mcmmo.ability.taming.callofthewild.all
  + (Locale) Added locale strings for new Woodcutting abilities
  + (Locale) Added locale strings for mcchatspy command
  + (Locale) Added locale strings for JSON integration
@@ -59,11 +213,18 @@ Version 2.1.0
  = (Skills) Tridents will no longer be considered unarmed
  = (MySQL) You can now inspect offline players
  = (MySQL) When converting from MySQL to flatfile mcMMO will now properly include all users in the conversion process
+ = (Commands) '/mcMMO help' no longer displays the other/special commands category to players lacking permissions
  + (Party) Parties can now have size limits (configurable in config.yml), party size is unlimited by default
+ + (Party) You can now turn on Friendly Fire for parties in config.yml
+ + (Debug Stick) The Debug stick can now tell you about properties of a block related to Excavation
  ! (Deaths) Fixed the bug where mob names would be replaced by hearts
  ! (Experience) The XP values of fish are now based on their rarity and have been drastically changed
+ ! (Experience) Skills now start at level 1 (configurable in advanced.yml)
  ! (Item) Improved some of the messages sent to the player regarding the Chimaera Wing
  ! (Party) Party member list will only include members of the party that you can see (aren't vanished)
+ ! (Skills) Excavation Treasure Hunter is renamed to Archaeology
+ ! (Skills) Swords no longer require blocking with a shield to trigger counter attacks
+ ! (Skills) Stripping wood and right clicking on stripped wood will no longer ready your Axe
  ! (Skills) Some skill level rank requirements have changed
  ! (Skills) Green Thumb now uses a rank system
  ! (Skills) Farmer's Diet & Fisherman's Diet now use a rank system
@@ -74,10 +235,24 @@ Version 2.1.0
  ! (Skills) Acrobatics' Roll & Gracefull Roll are now considered the same skill (both mechanics are still there)
  ! (Skills) Woodcutting's Double Drop subskill is now named Harvest Lumber
  ! (Skills) Archery's Skill Shot now uses a rank system
+ ! (Skills) Swords' Bleed now uses a rank system
+ ! (Skills) Swords' Counter Attack now uses a rank system
  ! (Skills) Axe's Axe Mastery now uses a rank system
  ! (Skills) Axe's Impact now uses a rank system
  ! (Skills) Herbalism's Farmer's Diet now uses a rank system
  ! (Skills) Herbalism's Green Thumb now uses a rank system
+ ! (Skills) Shake now uses a rank system
+ ! (Skills) Flux Mining now uses a rank system
+ ! (Skills) Removed traps from fishing
+ ! (Skills) Dodge now uses a rank system
+ ! (Skills) Arrow Retrieval now uses a rank system
+ ! (Skills) Axes' Critical Strikes now uses a rank system
+ ! (Skills) Axes' Greater Impact now uses a rank system
+ ! (Skills) Taming's Beast Lore now uses a rank system
+ ! (Skills) Taming's Gore now uses a rank system
+ ! (Skills) Taming's Call of the Wild now uses a rank system
+ ! (Skills) Taming's Pummel now uses a rank system
+ ! (Kraken) Removed everything involving the kraken
  = (Skills) Shake now sends custom damage types for better nocheat compat
  ! (Config) Unarmed.IronArm in advanced.yml is now Unarmed.IronArmStyle
  ! (Config) Unarmed.Deflect in advanced.yml is now Unarmed.ArrowDeflect
@@ -91,6 +266,8 @@ Version 2.1.0
  ! (Permissions) Counter Attack permission node renamed to mcmmo.ability.swords.counterattack
  ! (Permissions) Arrow Deflect permission node renamed to mcmmo.ability.unarmed.arrowdeflect
  ! (Permissions) Iron Arm Style permission node renamed to mcmmo.ability.unarmed.ironarmstyle
+ ! (Permissions) Remove all mob health bar permissions, this is no longer a per-player setting.
+ ! (Commands) Removed the mobhealthbar command, this is no longer a per-player setting.
  ! (Locale) The descriptions of a few skills have changed
  ! (Locale) Removed redundant information from some skill names and descriptions en_US (other locales will need to be updated)
  ! (Locale) SubSkill locale keys are now located at {ParentSkill}.SubSkill.SubSkillName

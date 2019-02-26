@@ -134,12 +134,11 @@ public class FishingManager extends SkillManager {
     /**
      * Handle the Fisherman's Diet ability
      *
-     * @param rankChange     The # of levels to change rank for the food
      * @param eventFoodLevel The initial change in hunger from the event
      *
      * @return the modified change in hunger for the event
      */
-    public int handleFishermanDiet(int rankChange, int eventFoodLevel) {
+    public int handleFishermanDiet(int eventFoodLevel) {
         return SkillUtils.handleFoodSkills(getPlayer(), eventFoodLevel, SubSkillType.FISHING_FISHERMANS_DIET);
     }
 
@@ -296,7 +295,7 @@ public class FishingManager extends SkillManager {
                             break;
 
                         case BEDROCK:
-                            if (TreasureConfig.getInstance().getInventoryStealEnabled()) {
+                            if (FishingTreasureConfig.getInstance().getInventoryStealEnabled()) {
                                 PlayerInventory inventory = targetPlayer.getInventory();
                                 int length = inventory.getContents().length;
                                 int slot = Misc.getRandom().nextInt(length);
@@ -306,7 +305,7 @@ public class FishingManager extends SkillManager {
                                     break;
                                 }
 
-                                if (TreasureConfig.getInstance().getInventoryStealStacks()) {
+                                if (FishingTreasureConfig.getInstance().getInventoryStealStacks()) {
                                     inventory.setItem(slot, null);
                                 }
                                 else {
@@ -374,7 +373,7 @@ public class FishingManager extends SkillManager {
         FishingTreasure treasure = null;
 
         for (Rarity rarity : Rarity.values()) {
-            double dropRate = TreasureConfig.getInstance().getItemDropRate(getLootTier(), rarity);
+            double dropRate = FishingTreasureConfig.getInstance().getItemDropRate(getLootTier(), rarity);
 
             if (diceRoll <= dropRate) {
                 /*if (rarity == Rarity.TRAP) {
@@ -433,7 +432,7 @@ public class FishingManager extends SkillManager {
                 continue;
             }
 
-            double dropRate = TreasureConfig.getInstance().getEnchantmentDropRate(getLootTier(), rarity);
+            double dropRate = FishingTreasureConfig.getInstance().getEnchantmentDropRate(getLootTier(), rarity);
 
             if (diceRoll <= dropRate) {
                 // Make sure enchanted books always get some kind of enchantment.  --hoorigan
@@ -441,7 +440,7 @@ public class FishingManager extends SkillManager {
                     diceRoll = dropRate + 1;
                     continue;
                 }
-                fishingEnchantments = TreasureConfig.getInstance().fishingEnchantments.get(rarity);
+                fishingEnchantments = FishingTreasureConfig.getInstance().fishingEnchantments.get(rarity);
                 break;
             }
 

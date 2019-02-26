@@ -402,8 +402,7 @@ public class mcMMO extends JavaPlugin {
 
     private void loadConfigFiles() {
         configManager = new ConfigManager();
-
-
+        configManager.loadConfigs();
     }
 
     private void registerEvents() {

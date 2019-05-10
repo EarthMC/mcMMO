@@ -14,6 +14,7 @@ General:
     RetroMode:
         Enabled: false
     Locale: en_US
+    AprilFoolsEvent: true
     MOTD_Enabled: true
     # Send a message to the player when his profile was successfully loaded
     Show_Profile_Loaded: false
@@ -311,8 +312,6 @@ Skills:
     Acrobatics:
         Enabled_For_PVP: true
         Enabled_For_PVE: true
-        Prevent_AFK_Leveling: true
-        Max_Tries_At_Same_Location: 3
         Prevent_Dodge_Lightning: false
         # Prevent earning Acrobatics XP a few seconds after teleporting
         XP_After_Teleport_Cooldown: 5
@@ -426,46 +425,81 @@ Skills:
 #
 #  Settings for Double Drops
 ###
-Double_Drops:
+Bonus_Drops:
     Herbalism:
-        Beetroots_Ripe: true
+        Beetroots: true
+        Beetroot: true
         Brown_Mushroom: true
         Cactus: true
-        Carrots_Ripe: true
-        Cocoa_Ripe: true
-        Wheat_Ripe: true
+        Carrots: true
+        Carrot: true
+        Cocoa: true
+        Cocoa_Beans: true
+        Wheat: true
         Melon: true
-        Nether_Wart_Ripe: true
-        Potatoes_Ripe: true
+        Melon_Slice: true
+        Nether_Wart: true
+        Potatoes: true
+        Potatoe: true
         Pumpkin: true
         Red_Mushroom: true
-        Red_Tulip: true
         Sugar_Cane: true
         Vine: true
         Lily_Pad: true
+        Red_Tulip: true
+        White_Tulip: true
+        Pink_Tulip: true
+        Orange_Tulip: true
         Dandelion: true
+        Poppy: true
+        Blue_Orchid: true
+        Allium: true
+        Azure_Bluet: true
+        Oxeye_Daisy: true
+        Sunflower: true
+        Lilac: true
+        Rose_Bush: true
+        Peony: true
     Mining:
+        Andesite: true
+        Diorite: true
+        Granite: true
         Coal_Ore: true
+        Coal: true
         Diamond_Ore: true
+        Diamond: true
         Emerald_Ore: true
+        Emerald: true
         End_Stone: true
         Glowstone: true
+        Glowstone_Dust: true
         Gold_Ore: true
         Iron_Ore: true
+        Iron_Ingot: true
         Lapis_Ore: true
+        Lapis_Lazuli: true
         Mossy_Cobblestone: true
         Netherrack: true
         Obsidian: true
         Nether_Quartz_Ore: true
+        Nether_Quartz: true
         Redstone_Ore: true
+        Redstone: true
         Sandstone: true
         Stone: true
+        Cobblestone: true
     Woodcutting:
+        Acacia_Wood: true
         Acacia_Log: true
+        Birch_Wood: true
         Birch_Log: true
+        Dark_Oak_Wood: true
         Dark_Oak_Log: true
+        Oak_Wood: true
         Oak_Log: true
+        Jungle_Wood: true
         Jungle_Log: true
+        Spruce_Wood: true
         Spruce_Log: true
 
 #

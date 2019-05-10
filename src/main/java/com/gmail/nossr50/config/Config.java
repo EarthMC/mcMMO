@@ -186,10 +186,6 @@ public class Config extends AutoUpdateConfigLoader {
             reason.add("Abilities.Fishing.Lure_Modifier should be at least 0!");
         }
 
-        if (getDetonatorItem() == null) {
-            reason.add("Skills.Mining.Detonator_Item is invalid!");
-        }
-
         if (getRepairAnvilMaterial() == null) {
             reason.add("Skills.Repair.Anvil_Type is invalid!!");
         }
@@ -244,6 +240,8 @@ public class Config extends AutoUpdateConfigLoader {
     /*
      * GENERAL SETTINGS
      */
+
+    public boolean isAprilFoolsAllowed() { return config.getBoolean("General.AprilFoolsEvent", true); }
 
     /* General Settings */
     public boolean getIsMetricsEnabled() { return config.getBoolean("Metrics.bstats", true); }
@@ -405,7 +403,7 @@ public class Config extends AutoUpdateConfigLoader {
     public boolean getCallOfTheWildEffectEnabled() { return config.getBoolean("Particles.Call_of_the_Wild", true); }
     public boolean getLevelUpEffectsEnabled() { return config.getBoolean("Particles.LevelUp_Enabled", true); }
     public int getLevelUpEffectsTier() { return config.getInt("Particles.LevelUp_Tier", 100); }
-    public boolean getLargeFireworks() { return config.getBoolean("Particles.LargeFireworks", true); }
+//    public boolean getLargeFireworks() { return config.getBoolean("Particles.LargeFireworks", true); }
 
     /* PARTY SETTINGS */
     public boolean getPartyFriendlyFire() { return config.getBoolean("Party.FriendlyFire", false);}
@@ -463,18 +461,18 @@ public class Config extends AutoUpdateConfigLoader {
     /*
      * SKILL SETTINGS
      */
-    public boolean getDoubleDropsEnabled(PrimarySkillType skill, Material material) { return config.getBoolean("Double_Drops." + StringUtils.getCapitalized(skill.toString()) + "." + StringUtils.getPrettyItemString(material).replace(" ", "_")); }
+    public boolean getDoubleDropsEnabled(PrimarySkillType skill, Material material) { return config.getBoolean("Bonus_Drops." + StringUtils.getCapitalized(skill.toString()) + "." + StringUtils.getPrettyItemString(material).replace(" ", "_")); }
 
     public boolean getDoubleDropsDisabled(PrimarySkillType skill) {
         String skillName = StringUtils.getCapitalized(skill.toString());
-        ConfigurationSection section = config.getConfigurationSection("Double_Drops." + skillName);
+        ConfigurationSection section = config.getConfigurationSection("Bonus_Drops." + skillName);
         if (section == null)
             return false;
         Set<String> keys = section.getKeys(false);
         boolean disabled = true;
 
         for (String key : keys) {
-            if (config.getBoolean("Double_Drops." + skillName + "." + key)) {
+            if (config.getBoolean("Bonus_Drops." + skillName + "." + key)) {
                 disabled = false;
                 break;
             }
@@ -503,7 +501,6 @@ public class Config extends AutoUpdateConfigLoader {
 
     /* Mining */
     public Material getDetonatorItem() { return Material.matchMaterial(config.getString("Skills.Mining.Detonator_Name", "FLINT_AND_STEEL")); }
-    public int getMiningGate() { return config.getInt("Skills.Mining.Ability_Activation_Level_Gate", 10); }
 
     /* Excavation */
     public int getExcavationGate() { return config.getInt("Skills.Excavation.Ability_Activation_Level_Gate", 10); }
@@ -540,13 +537,11 @@ public class Config extends AutoUpdateConfigLoader {
     public double getTamingCOTWRange() { return config.getDouble("Skills.Taming.Call_Of_The_Wild.Range", 40.0D); }
 
     /* Woodcutting */
-    public boolean getWoodcuttingDoubleDropsEnabled(BlockData material) { return config.getBoolean("Double_Drops.Woodcutting." + StringUtils.getFriendlyConfigBlockDataString(material)); }
+    public boolean getWoodcuttingDoubleDropsEnabled(BlockData material) { return config.getBoolean("Bonus_Drops.Woodcutting." + StringUtils.getFriendlyConfigBlockDataString(material)); }
     public boolean getTreeFellerSoundsEnabled() { return config.getBoolean("Skills.Woodcutting.Tree_Feller_Sounds", true); }
     public int getWoodcuttingGate() { return config.getInt("Skills.Woodcutting.Ability_Activation_Level_Gate", 10); }
 
     /* AFK Leveling */
-    public boolean getAcrobaticsPreventAFK() { return config.getBoolean("Skills.Acrobatics.Prevent_AFK_Leveling", true); }
-    public int getAcrobaticsAFKMaxTries() { return config.getInt("Skills.Acrobatics.Max_Tries_At_Same_Location", 3); }
     public boolean getHerbalismPreventAFK() { return config.getBoolean("Skills.Herbalism.Prevent_AFK_Leveling", true); }
 
     /* Level Caps */

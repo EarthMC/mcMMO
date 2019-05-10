@@ -14,7 +14,6 @@ import com.gmail.nossr50.events.fake.FakeEntityTameEvent;
 import com.gmail.nossr50.mcMMO;
 import com.gmail.nossr50.party.PartyManager;
 import com.gmail.nossr50.skills.archery.Archery;
-import com.gmail.nossr50.skills.fishing.Fishing;
 import com.gmail.nossr50.skills.mining.BlastMining;
 import com.gmail.nossr50.skills.mining.MiningManager;
 import com.gmail.nossr50.skills.taming.Taming;
@@ -52,6 +51,19 @@ public class EntityListener implements Listener {
 
     public EntityListener(final mcMMO plugin) {
         this.plugin = plugin;
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntityTransform(EntityTransformEvent event)
+    {
+        //Transfer metadata keys from mob-spawned mobs to new mobs
+        if(event.getEntity().getMetadata(mcMMO.entityMetadataKey) != null || event.getEntity().getMetadata(mcMMO.entityMetadataKey).size() >= 1)
+        {
+            for(Entity entity : event.getTransformedEntities())
+            {
+                entity.setMetadata(mcMMO.entityMetadataKey, mcMMO.metadataValue);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -147,7 +159,9 @@ public class EntityListener implements Listener {
         // When the event is fired for the falling block that changes back to a
         // normal block
         // event.getBlock().getType() returns AIR
-        if (!BlockUtils.shouldBeWatched(block.getState()) && block.getType() != Material.AIR) {
+        if (!BlockUtils.shouldBeWatched(block.getState())
+                && block.getState().getType() != Material.WATER
+                && block.getType() != Material.AIR) {
             return;
         }
 
@@ -173,6 +187,75 @@ public class EntityListener implements Listener {
         }
     }
 
+    /*@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onEntityDamageDebugLowest(EntityDamageEvent event)
+    {
+        if(event instanceof FakeEntityDamageByEntityEvent)
+            return;
+
+        if(event instanceof FakeEntityDamageEvent)
+            return;
+
+        Bukkit.broadcastMessage(ChatColor.DARK_AQUA+"DMG Before Events: "
+                +ChatColor.RESET+event.getDamage());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityDamageDebugMonitor(EntityDamageEvent event)
+    {
+        if(event instanceof FakeEntityDamageByEntityEvent)
+            return;
+
+        if(event instanceof FakeEntityDamageEvent)
+            return;
+
+        if(!(event.getEntity() instanceof LivingEntity))
+            return;
+
+        LivingEntity entity = (LivingEntity) event.getEntity();
+
+        double rawDamage = event.getDamage();
+        double dmgAfterReduction = event.getFinalDamage();
+
+        Bukkit.broadcastMessage(ChatColor.GOLD+"DMG After Events: "
+                + event.getEntity().getName()+ChatColor.RESET
+                +"RawDMG["+rawDamage+"], "
+                +"FinalDMG=["+dmgAfterReduction+"]");
+
+        Bukkit.broadcastMessage(
+                event.getEntity().getName()
+                +ChatColor.GREEN
+                +" HP "
+                +ChatColor.RESET
+                +entity.getHealth()
+                +ChatColor.YELLOW
+                +" -> "
+                +ChatColor.RESET
+                +(entity.getHealth()-event.getFinalDamage()));
+
+        Bukkit.broadcastMessage("");
+    }*/
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onEntityDamageLowest(EntityDamageByEntityEvent event)
+    {
+        Entity defender = event.getEntity();
+
+        if(defender.getMetadata(mcMMO.CUSTOM_DAMAGE_METAKEY).size() > 0)
+        {
+            defender.removeMetadata(mcMMO.CUSTOM_DAMAGE_METAKEY, plugin);
+
+            if(defender instanceof Player)
+            {
+                LivingEntity defLive = (LivingEntity) defender;
+                defLive.setHealth(Math.max(0, (defLive.getHealth() - event.getFinalDamage())));
+                event.setCancelled(true);
+            }
+
+            return;
+        }
+    }
+
     /**
      * Handle EntityDamageByEntity events that involve modifying the event.
      *
@@ -181,6 +264,10 @@ public class EntityListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        double damage = event.getFinalDamage();
+        Entity defender = event.getEntity();
+        Entity attacker = event.getDamager();
+
         /* WORLD BLACKLIST CHECK */
         if(WorldBlacklist.isWorldBlacklisted(event.getEntity().getWorld()))
             return;
@@ -198,10 +285,6 @@ public class EntityListener implements Listener {
             event.setCancelled(true);
             return;
         }
-
-        double damage = event.getFinalDamage();
-        Entity defender = event.getEntity();
-        Entity attacker = event.getDamager();
 
         if(attacker instanceof Player)
         {
@@ -250,8 +333,6 @@ public class EntityListener implements Listener {
         if (CombatUtils.isInvincible(target, damage)) {
             return;
         }
-
-
 
         if (Misc.isNPCEntity(attacker)) {
             return;
@@ -322,6 +403,8 @@ public class EntityListener implements Listener {
                 }
             }
         }
+
+
     }
 
     /**
@@ -398,6 +481,10 @@ public class EntityListener implements Listener {
 
             McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
 
+            //Profile not loaded
+            if(mcMMOPlayer == null)
+                return;
+
             /* Check for invincibility */
             if (mcMMOPlayer.getGodMode()) {
                 event.setCancelled(true);
@@ -428,6 +515,12 @@ public class EntityListener implements Listener {
             if (Taming.canPreventDamage(pet, owner)) {
                 Player player = (Player) owner;
                 Wolf wolf = (Wolf) pet;
+
+                //Profile not loaded
+                if(UserManager.getPlayer(player) == null)
+                {
+                    return;
+                }
 
                 TamingManager tamingManager = UserManager.getPlayer(player).getTamingManager();
 
@@ -606,6 +699,12 @@ public class EntityListener implements Listener {
             return;
         }
 
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
+
         /* WORLD GUARD MAIN FLAG CHECK */
         if(WorldGuardUtils.isWorldGuardLoaded())
         {
@@ -651,6 +750,12 @@ public class EntityListener implements Listener {
         {
             if(!WorldGuardManager.getInstance().hasMainFlag(player))
                 return;
+        }
+
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
         }
 
         MiningManager miningManager = UserManager.getPlayer(player).getMiningManager();
@@ -701,6 +806,12 @@ public class EntityListener implements Listener {
         }
 
         Player player = (Player) entity;
+
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
 
         /* WORLD GUARD MAIN FLAG CHECK */
         if(WorldGuardUtils.isWorldGuardLoaded())
@@ -765,19 +876,14 @@ public class EntityListener implements Listener {
                     event.setFoodLevel(UserManager.getPlayer(player).getHerbalismManager().farmersDiet(newFoodLevel));
                 }
                 return;
+            case COD:
+            case SALMON:
+            case TROPICAL_FISH:
+            case COOKED_COD:
+            case COOKED_SALMON:
 
-            case COOKED_SALMON: /*
-                               * RESTORES 2 1/2 HUNGER - RESTORES 5 HUNGER @
-                               * 1000
-                               */
                 if (Permissions.isSubSkillEnabled(player, SubSkillType.FISHING_FISHERMANS_DIET)) {
-                    event.setFoodLevel(UserManager.getPlayer(player).getFishingManager().handleFishermanDiet(Fishing.fishermansDietRankLevel1, newFoodLevel));
-                }
-                return;
-
-            case SALMON: /* RESTORES 1 HUNGER - RESTORES 2 1/2 HUNGER @ 1000 */
-                if (Permissions.isSubSkillEnabled(player, SubSkillType.FISHING_FISHERMANS_DIET)) {
-                    event.setFoodLevel(UserManager.getPlayer(player).getFishingManager().handleFishermanDiet(Fishing.fishermansDietRankLevel2, newFoodLevel));
+                    event.setFoodLevel(UserManager.getPlayer(player).getFishingManager().handleFishermanDiet(newFoodLevel));
                 }
                 return;
 
@@ -818,6 +924,13 @@ public class EntityListener implements Listener {
         }
 
         entity.setMetadata(mcMMO.entityMetadataKey, mcMMO.metadataValue);
+
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
+
         UserManager.getPlayer(player).getTamingManager().awardTamingXP(entity);
     }
 

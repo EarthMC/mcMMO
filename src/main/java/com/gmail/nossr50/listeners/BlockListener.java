@@ -29,20 +29,15 @@ import com.gmail.nossr50.util.sounds.SoundManager;
 import com.gmail.nossr50.util.sounds.SoundType;
 import com.gmail.nossr50.worldguard.WorldGuardManager;
 import com.gmail.nossr50.worldguard.WorldGuardUtils;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Tag;
+import org.bukkit.*;
 import org.bukkit.block.*;
-import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
-import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 
 import java.util.List;
@@ -53,6 +48,75 @@ public class BlockListener implements Listener {
     public BlockListener(final mcMMO plugin) {
         this.plugin = plugin;
     }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockDropItemEvent(BlockDropItemEvent event)
+    {
+        for(Item item : event.getItems())
+        {
+            ItemStack is = new ItemStack(item.getItemStack());
+
+            if(is.getAmount() <= 0)
+                continue;
+
+            //TODO: Ignore this abomination its rewritten in 2.2
+            if(!Config.getInstance().getDoubleDropsEnabled(PrimarySkillType.MINING, is.getType())
+                    && !Config.getInstance().getDoubleDropsEnabled(PrimarySkillType.HERBALISM, is.getType())
+                        && !Config.getInstance().getDoubleDropsEnabled(PrimarySkillType.WOODCUTTING, is.getType()))
+                continue;
+
+            //TODO: Should just store the amount of drops in the metadata itself and use a loop
+            if(event.getBlock().getState().getMetadata(mcMMO.doubleDrops).size() > 0)
+            {
+                event.getBlock().getState().getWorld().dropItemNaturally(event.getBlockState().getLocation(), is);
+                event.getBlock().getState().removeMetadata(mcMMO.doubleDrops, plugin);
+            }
+            else if(event.getBlock().getState().getMetadata(mcMMO.tripleDrops).size() > 0)
+            {
+                event.getBlock().getState().getWorld().dropItemNaturally(event.getBlockState().getLocation(), is);
+                event.getBlock().getState().getWorld().dropItemNaturally(event.getBlockState().getLocation(), is);
+                event.getBlock().getState().removeMetadata(mcMMO.tripleDrops, plugin);
+            }
+        }
+    }
+
+    /*@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockDropItemEvent(BlockDropItemEvent event)
+    {
+        for(Item item : event.getItems())
+        {
+            ItemStack is = new ItemStack(item.getItemStack());
+
+            if(event.getBlock().getMetadata(mcMMO.doubleDrops).size() > 0)
+            {
+                List<MetadataValue> metadataValue = event.getBlock().getMetadata(mcMMO.doubleDrops);
+
+                BonusDrops bonusDrops = (BonusDrops) metadataValue.get(0);
+                Collection<ItemStack> potentialDrops = (Collection<ItemStack>) bonusDrops.value();
+
+                if(potentialDrops.contains(is))
+                {
+                    event.getBlock().getState().getWorld().dropItemNaturally(event.getBlockState().getLocation(), is);
+                }
+
+                event.getBlock().removeMetadata(mcMMO.doubleDrops, plugin);
+            } else {
+                if(event.getBlock().getMetadata(mcMMO.tripleDrops).size() > 0) {
+                    List<MetadataValue> metadataValue = event.getBlock().getMetadata(mcMMO.tripleDrops);
+
+                    BonusDrops bonusDrops = (BonusDrops) metadataValue.get(0);
+                    Collection<ItemStack> potentialDrops = (Collection<ItemStack>) bonusDrops.value();
+
+                    if (potentialDrops.contains(is)) {
+                        event.getBlock().getState().getWorld().dropItemNaturally(event.getBlockState().getLocation(), is);
+                        event.getBlock().getState().getWorld().dropItemNaturally(event.getBlockState().getLocation(), is);
+                    }
+
+                    event.getBlock().removeMetadata(mcMMO.tripleDrops, plugin);
+                }
+            }
+        }
+    }*/
 
     /**
      * Monitor BlockPistonExtend events.
@@ -70,7 +134,7 @@ public class BlockListener implements Listener {
         movedBlock = movedBlock.getRelative(direction, 2);
 
         for (Block b : event.getBlocks()) {
-            if (BlockUtils.shouldBeWatched(b.getState()) && mcMMO.getPlaceStore().isTrue(b)) {
+            if (BlockUtils.shouldBeWatched(b.getState())) {
                 movedBlock = b.getRelative(direction);
                 mcMMO.getPlaceStore().setTrue(movedBlock);
             }
@@ -118,37 +182,6 @@ public class BlockListener implements Listener {
     }
 
     /**
-     * Monitor falling blocks.
-     *
-     * @param event The event to watch
-     */
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onFallingBlock(EntityChangeBlockEvent event) {
-        /* WORLD BLACKLIST CHECK */
-        if(WorldBlacklist.isWorldBlacklisted(event.getBlock().getWorld()))
-            return;
-
-        if (BlockUtils.shouldBeWatched(event.getBlock().getState()) && event.getEntityType().equals(EntityType.FALLING_BLOCK)) {
-            if (event.getTo().equals(Material.AIR) && mcMMO.getPlaceStore().isTrue(event.getBlock())) {
-                event.getEntity().setMetadata("mcMMOBlockFall", new FixedMetadataValue( plugin, event.getBlock().getLocation()));
-            } else {
-                List<MetadataValue> values = event.getEntity().getMetadata( "mcMMOBlockFall" );
-
-                if (!values.isEmpty()) {
-
-                    if (values.get(0).value() == null) return;
-                    Block spawn = ((org.bukkit.Location) values.get(0).value()).getBlock();
-
-
-                    mcMMO.getPlaceStore().setTrue( event.getBlock() );
-                    mcMMO.getPlaceStore().setFalse( spawn );
-
-                }
-            }
-        }
-    }
-
-    /**
      * Monitor BlockPlace events.
      *
      * @param event The event to watch
@@ -175,6 +208,9 @@ public class BlockListener implements Listener {
         }
 
         McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
+
+        if(mcMMOPlayer == null)
+            return;
 
         if (blockState.getType() == Repair.anvilMaterial && PrimarySkillType.REPAIR.getPermissions(player)) {
             mcMMOPlayer.getRepairManager().placedAnvilCheck();
@@ -269,6 +305,11 @@ public class BlockListener implements Listener {
         }
 
         McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
+
+        //Check if profile is loaded
+        if(mcMMOPlayer == null)
+            return;
+
         ItemStack heldItem = player.getInventory().getItemInMainHand();
 
         /* HERBALISM */
@@ -348,6 +389,12 @@ public class BlockListener implements Listener {
             return;
         }
 
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
+
         BlockState blockState = event.getBlock().getState();
         ItemStack heldItem = player.getInventory().getItemInMainHand();
 
@@ -412,6 +459,12 @@ public class BlockListener implements Listener {
         }
 
         McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
+
+        //Profile not loaded
+        if(mcMMOPlayer == null)
+        {
+            return;
+        }
 
         /*
          * ABILITY PREPARATION CHECKS
@@ -487,6 +540,13 @@ public class BlockListener implements Listener {
         }
 
         McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
+
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
+
         ItemStack heldItem = player.getInventory().getItemInMainHand();
         Block block = event.getBlock();
         BlockState blockState = block.getState();
@@ -522,6 +582,14 @@ public class BlockListener implements Listener {
     public void onBlockDamageCleanup(BlockDamageEvent event) {
         Player player = event.getPlayer();
         McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
+
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
+
+
         BlockState blockState = event.getBlock().getState();
 
         ItemStack heldItem = player.getInventory().getItemInMainHand();
@@ -532,6 +600,12 @@ public class BlockListener implements Listener {
     }
 
     public void debugStickDump(Player player, BlockState blockState) {
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
+
         if(player.getInventory().getItemInMainHand().getType() == Material.DEBUG_STICK)
         {
             if(mcMMO.getPlaceStore().isTrue(blockState))

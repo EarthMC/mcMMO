@@ -19,6 +19,7 @@ import com.gmail.nossr50.party.PartyManager;
 import com.gmail.nossr50.runnables.CheckDateTask;
 import com.gmail.nossr50.runnables.SaveTimerTask;
 import com.gmail.nossr50.runnables.backups.CleanBackupsTask;
+import com.gmail.nossr50.runnables.commands.NotifySquelchReminderTask;
 import com.gmail.nossr50.runnables.database.UserPurgeTask;
 import com.gmail.nossr50.runnables.party.PartyAutoKickTask;
 import com.gmail.nossr50.runnables.player.ClearRegisteredXPGainTask;
@@ -38,6 +39,7 @@ import com.gmail.nossr50.util.blockmeta.chunkmeta.ChunkManager;
 import com.gmail.nossr50.util.blockmeta.chunkmeta.ChunkManagerFactory;
 import com.gmail.nossr50.util.commands.CommandRegistrationManager;
 import com.gmail.nossr50.util.experience.FormulaManager;
+import com.gmail.nossr50.util.player.PlayerLevelUtils;
 import com.gmail.nossr50.util.player.UserManager;
 import com.gmail.nossr50.util.scoreboards.ScoreboardManager;
 import com.gmail.nossr50.util.skills.RankUtils;
@@ -46,6 +48,7 @@ import com.gmail.nossr50.worldguard.WorldGuardManager;
 import com.google.common.base.Charsets;
 import net.shatteredlands.shatt.backup.ZipLibrary;
 import org.bstats.bukkit.Metrics;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -56,6 +59,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,12 +73,15 @@ public class mcMMO extends JavaPlugin {
     private static FormulaManager     formulaManager;
     private static HolidayManager     holidayManager;
     private static UpgradeManager     upgradeManager;
+    private static MaterialMapStore materialMapStore;
+    private static PlayerLevelUtils playerLevelUtils;
 
     /* Blacklist */
     private static WorldBlacklist worldBlacklist;
 
     /* File Paths */
     private static String mainDirectory;
+    private static String localesDirectory;
     private static String flatFileDirectory;
     private static String usersFile;
     private static String modDirectory;
@@ -87,6 +94,9 @@ public class mcMMO extends JavaPlugin {
     /* Plugin Checks */
     private static boolean healthBarPluginEnabled;
 
+    // API checks
+    private static boolean serverAPIOutdated = false;
+
     // Config Validation Check
     public boolean noErrorsInConfigFiles = true;
 
@@ -96,6 +106,8 @@ public class mcMMO extends JavaPlugin {
     private static boolean isRetroModeEnabled;
 
     /* Metadata Values */
+    public static final String FISH_HOOK_REF_METAKEY = "mcMMO: Fish Hook Tracker";
+    public static final String CUSTOM_DAMAGE_METAKEY = "mcMMO: Custom Damage";
     public final static String entityMetadataKey   = "mcMMO: Spawned Entity";
     public final static String blockMetadataKey    = "mcMMO: Piston Tracking";
     public final static String furnaceMetadataKey  = "mcMMO: Tracked Furnace";
@@ -108,6 +120,8 @@ public class mcMMO extends JavaPlugin {
     public final static String infiniteArrowKey    = "mcMMO: Infinite Arrow";
     public final static String bowForceKey         = "mcMMO: Bow Force";
     public final static String arrowDistanceKey    = "mcMMO: Arrow Distance";
+    public final static String doubleDrops         = "mcMMO: Double Drops";
+    public final static String tripleDrops         = "mcMMO: Triple Drops";
     //public final static String customDamageKey     = "mcMMO: Custom Damage";
     public final static String disarmedItemKey     = "mcMMO: Disarmed Item";
     public final static String playerDataKey       = "mcMMO: Player Data";
@@ -160,35 +174,54 @@ public class mcMMO extends JavaPlugin {
 
             databaseManager = DatabaseManagerFactory.getDatabaseManager();
 
-            registerEvents();
-            registerCoreSkills();
-            registerCustomRecipes();
+            //Check for the newer API and tell them what to do if its missing
+            checkForOutdatedAPI();
 
-            PartyManager.loadParties();
+            if(serverAPIOutdated)
+            {
+                Bukkit
+                        .getScheduler()
+                        .scheduleSyncRepeatingTask(this,
+                                () -> getLogger().severe("You are running an outdated version of "+getServerSoftware()+", mcMMO will not work unless you update to a newer version!"),
+                        20, 20*60*30);
 
-            formulaManager = new FormulaManager();
-            holidayManager = new HolidayManager();
+                if(getServerSoftware() == ServerSoftwareType.CRAFTBUKKIT)
+                {
+                    Bukkit.getScheduler()
+                            .scheduleSyncRepeatingTask(this,
+                                    () -> getLogger().severe("We have detected you are using incompatible server software, our best guess is that you are using CraftBukkit. mcMMO requires Spigot or Paper, if you are not using CraftBukkit, you will still need to update your custom server software before mcMMO will work."),
+                    20, 20*60*30);
+                }
+            } else {
+                registerEvents();
+                registerCoreSkills();
+                registerCustomRecipes();
 
-            for (Player player : getServer().getOnlinePlayers()) {
-                new PlayerProfileLoadingTask(player).runTaskLaterAsynchronously(mcMMO.p, 1); // 1 Tick delay to ensure the player is marked as online before we begin loading
+                PartyManager.loadParties();
+
+                formulaManager = new FormulaManager();
+                holidayManager = new HolidayManager();
+
+                for (Player player : getServer().getOnlinePlayers()) {
+                    new PlayerProfileLoadingTask(player).runTaskLaterAsynchronously(mcMMO.p, 1); // 1 Tick delay to ensure the player is marked as online before we begin loading
+                }
+
+                debug("Version " + getDescription().getVersion() + " is enabled!");
+
+                scheduleTasks();
+                CommandRegistrationManager.registerCommands();
+
+                placeStore = ChunkManagerFactory.getChunkManager(); // Get our ChunkletManager
+
+                if (Config.getInstance().getPTPCommandWorldPermissions()) {
+                    Permissions.generateWorldTeleportPermissions();
+                }
+
+                //Populate Ranked Skill Maps (DO THIS LAST)
+                RankUtils.populateRanks();
             }
-
-            debug("Version " + getDescription().getVersion() + " is enabled!");
-
-            scheduleTasks();
-            CommandRegistrationManager.registerCommands();
-
-            placeStore = ChunkManagerFactory.getChunkManager(); // Get our ChunkletManager
-
-            if (Config.getInstance().getPTPCommandWorldPermissions()) {
-                Permissions.generateWorldTeleportPermissions();
-            }
-
-            //Populate Ranked Skill Maps (DO THIS LAST)
-            RankUtils.populateRanks();
 
             //If anonymous statistics are enabled then use them
-
             Metrics metrics;
 
             if(Config.getInstance().getIsMetricsEnabled()) {
@@ -214,8 +247,63 @@ public class mcMMO extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
         }
 
+        //Init Material Maps
+        materialMapStore = new MaterialMapStore();
+
+        //Init player level values
+        playerLevelUtils = new PlayerLevelUtils();
+
         //Init the blacklist
         worldBlacklist = new WorldBlacklist(this);
+    }
+
+    public static PlayerLevelUtils getPlayerLevelUtils() {
+        return playerLevelUtils;
+    }
+
+    public static MaterialMapStore getMaterialMapStore() {
+        return materialMapStore;
+    }
+
+    private void checkForOutdatedAPI() {
+        try {
+            Class<?> checkForClass = Class.forName("org.bukkit.event.block.BlockDropItemEvent");
+            Method newerAPIMethod =  checkForClass.getMethod("getItems");
+            Class<?> checkForClassBaseComponent = Class.forName("net.md_5.bungee.api.chat.BaseComponent");
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
+            serverAPIOutdated = true;
+            String software = getServerSoftwareStr();
+            getLogger().severe("You are running an older version of " + software + " that is not compatible with mcMMO, update your server software!");
+        }
+    }
+
+    private enum ServerSoftwareType {
+        PAPER,
+        SPIGOT,
+        CRAFTBUKKIT
+    }
+
+    private ServerSoftwareType getServerSoftware()
+    {
+        if(Bukkit.getVersion().toLowerCase().contains("paper"))
+            return ServerSoftwareType.PAPER;
+        else if(Bukkit.getVersion().toLowerCase().contains("spigot"))
+            return ServerSoftwareType.SPIGOT;
+        else
+            return ServerSoftwareType.CRAFTBUKKIT;
+    }
+
+    private String getServerSoftwareStr()
+    {
+        switch(getServerSoftware())
+        {
+            case PAPER:
+                return "Paper";
+            case SPIGOT:
+                return "Spigot";
+            default:
+                return "CraftBukkit";
+        }
     }
 
     @Override
@@ -277,6 +365,10 @@ public class mcMMO extends JavaPlugin {
 
     public static String getMainDirectory() {
         return mainDirectory;
+    }
+
+    public static String getLocalesDirectory() {
+        return localesDirectory;
     }
 
     public static String getFlatFileDirectory() {
@@ -354,6 +446,7 @@ public class mcMMO extends JavaPlugin {
     private void setupFilePaths() {
         mcmmo = getFile();
         mainDirectory = getDataFolder().getPath() + File.separator;
+        localesDirectory = mainDirectory + "locales" + File.separator;
         flatFileDirectory = mainDirectory + "flatfile" + File.separator;
         usersFile = flatFileDirectory + "mcmmo.users";
         modDirectory = mainDirectory + "mods" + File.separator;
@@ -407,6 +500,8 @@ public class mcMMO extends JavaPlugin {
 
         File currentFlatfilePath = new File(flatFileDirectory);
         currentFlatfilePath.mkdirs();
+        File localesDirectoryPath = new File(localesDirectory);
+        localesDirectoryPath.mkdirs();
     }
 
     private void loadConfigFiles() {
@@ -534,6 +629,11 @@ public class mcMMO extends JavaPlugin {
         // Clear the registered XP data so players can earn XP again
         if (ExperienceConfig.getInstance().getDiminishedReturnsEnabled()) {
             new ClearRegisteredXPGainTask().runTaskTimer(this, 60, 60);
+        }
+
+        if(AdvancedConfig.getInstance().allowPlayerTips())
+        {
+            new NotifySquelchReminderTask().runTaskTimer(this, 60, ((20 * 60) * 60));
         }
     }
 

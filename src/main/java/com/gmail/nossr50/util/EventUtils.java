@@ -120,10 +120,15 @@ public class EventUtils {
             Player player = (Player) entity;
 
             if (!UserManager.hasPlayerDataKey(player)) {
-                return false;
+                return true;
             }
 
             McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
+
+            if(mcMMOPlayer == null)
+            {
+                return true;
+            }
 
             /* Check for invincibility */
             if (mcMMOPlayer.getGodMode()) {
@@ -198,6 +203,22 @@ public class EventUtils {
         return !isCancelled;
     }
 
+    public static boolean handleLevelChangeEventEdit(Player player, PrimarySkillType skill, int levelsChanged, float xpRemoved, boolean isLevelUp, XPGainReason xpGainReason, int oldLevel) {
+        McMMOPlayerLevelChangeEvent event = isLevelUp ? new McMMOPlayerLevelUpEvent(player, skill, levelsChanged - oldLevel, xpGainReason) : new McMMOPlayerLevelDownEvent(player, skill, levelsChanged, xpGainReason);
+        mcMMO.p.getServer().getPluginManager().callEvent(event);
+
+        boolean isCancelled = event.isCancelled();
+
+        if (isCancelled) {
+            PlayerProfile profile = UserManager.getPlayer(player).getProfile();
+
+            profile.modifySkill(skill, profile.getSkillLevel(skill) - (isLevelUp ? levelsChanged : -levelsChanged));
+            profile.addXp(skill, xpRemoved);
+        }
+
+        return !isCancelled;
+    }
+
     /**
      * Simulate a block break event.
      *
@@ -225,6 +246,9 @@ public class EventUtils {
 
     public static void handlePartyTeleportEvent(Player teleportingPlayer, Player targetPlayer) {
         McMMOPlayer mcMMOPlayer = UserManager.getPlayer(teleportingPlayer);
+
+        if(mcMMOPlayer == null)
+            return;
 
         McMMOPartyTeleportEvent event = new McMMOPartyTeleportEvent(teleportingPlayer, targetPlayer, mcMMOPlayer.getParty().getName());
         mcMMO.p.getServer().getPluginManager().callEvent(event);
@@ -284,6 +308,9 @@ public class EventUtils {
     }
 
     public static boolean handleStatsLossEvent(Player player, HashMap<String, Integer> levelChanged, HashMap<String, Float> experienceChanged) {
+        if(UserManager.getPlayer(player) == null)
+            return true;
+
         McMMOPlayerStatLossEvent event = new McMMOPlayerStatLossEvent(player, levelChanged, experienceChanged);
         mcMMO.p.getServer().getPluginManager().callEvent(event);
 
@@ -330,6 +357,15 @@ public class EventUtils {
             HashMap<String, Float> experienceChangedVictim = eventVictim.getExperienceChanged();
 
             McMMOPlayer killerPlayer = UserManager.getPlayer(killer);
+
+            //Not loaded
+            if(killerPlayer == null)
+                return true;
+
+            //Not loaded
+            if(UserManager.getPlayer(victim) == null)
+                return true;
+
             PlayerProfile victimProfile = UserManager.getPlayer(victim).getProfile();
 
             for (PrimarySkillType primarySkillType : PrimarySkillType.NON_CHILD_SKILLS) {

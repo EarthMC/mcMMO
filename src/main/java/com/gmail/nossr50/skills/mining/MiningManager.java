@@ -11,14 +11,10 @@ import com.gmail.nossr50.datatypes.skills.SuperAbilityType;
 import com.gmail.nossr50.mcMMO;
 import com.gmail.nossr50.runnables.skills.AbilityCooldownTask;
 import com.gmail.nossr50.skills.SkillManager;
-import com.gmail.nossr50.util.BlockUtils;
-import com.gmail.nossr50.util.EventUtils;
-import com.gmail.nossr50.util.Misc;
-import com.gmail.nossr50.util.Permissions;
+import com.gmail.nossr50.util.*;
 import com.gmail.nossr50.util.player.NotificationManager;
 import com.gmail.nossr50.util.random.RandomChanceUtil;
 import com.gmail.nossr50.util.skills.RankUtils;
-import com.gmail.nossr50.util.skills.SkillActivationType;
 import com.gmail.nossr50.util.skills.SkillUtils;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -46,7 +42,9 @@ public class MiningManager extends SkillManager {
     public boolean canDetonate() {
         Player player = getPlayer();
 
-        return canUseBlastMining() && player.isSneaking() && player.getInventory().getItemInMainHand().getType() == BlastMining.detonator && Permissions.remoteDetonation(player);
+        return canUseBlastMining() && player.isSneaking()
+                && (ItemUtils.isPickaxe(getPlayer().getInventory().getItemInMainHand()) || player.getInventory().getItemInMainHand().getType() == Config.getInstance().getDetonatorItem())
+                && Permissions.remoteDetonation(player);
     }
 
     public boolean canUseBlastMining() {
@@ -81,22 +79,17 @@ public class MiningManager extends SkillManager {
             SkillUtils.handleDurabilityChange(getPlayer().getInventory().getItemInMainHand(), Config.getInstance().getAbilityToolDamage());
         }
 
-        if ((mcMMO.getModManager().isCustomMiningBlock(blockState) && !mcMMO.getModManager().getBlock(blockState).isDoubleDropEnabled()) || !Config.getInstance().getDoubleDropsEnabled(skill, material)) {
+        if(!Config.getInstance().getDoubleDropsEnabled(PrimarySkillType.MINING, blockState.getType()))
             return;
-        }
 
         boolean silkTouch = player.getInventory().getItemInMainHand().containsEnchantment(Enchantment.SILK_TOUCH);
 
+        if(silkTouch && !AdvancedConfig.getInstance().getDoubleDropSilkTouchEnabled())
+            return;
+
         //TODO: Make this readable
-        for (int i = mcMMOPlayer.getAbilityMode(skill.getAbility()) ? 2 : 1; i != 0; i--) {
-            if (RandomChanceUtil.isActivationSuccessful(SkillActivationType.RANDOM_LINEAR_100_SCALE_WITH_CAP, SubSkillType.MINING_DOUBLE_DROPS, player)) {
-                if (silkTouch) {
-                    Mining.handleSilkTouchDrops(blockState);
-                }
-                else {
-                    Mining.handleMiningDrops(blockState);
-                }
-            }
+        if (RandomChanceUtil.checkRandomChanceExecutionSuccess(getPlayer(), SubSkillType.MINING_DOUBLE_DROPS, true)) {
+            BlockUtils.markDropsAsBonus(blockState, mcMMOPlayer.getAbilityMode(skill.getAbility()));
         }
     }
 
@@ -124,7 +117,7 @@ public class MiningManager extends SkillManager {
 
         mcMMOPlayer.setAbilityDATS(SuperAbilityType.BLAST_MINING, System.currentTimeMillis());
         mcMMOPlayer.setAbilityInformed(SuperAbilityType.BLAST_MINING, false);
-        new AbilityCooldownTask(mcMMOPlayer, SuperAbilityType.BLAST_MINING).runTaskLaterAsynchronously(mcMMO.p, SuperAbilityType.BLAST_MINING.getCooldown() * Misc.TICK_CONVERSION_FACTOR);
+        new AbilityCooldownTask(mcMMOPlayer, SuperAbilityType.BLAST_MINING).runTaskLater(mcMMO.p, SuperAbilityType.BLAST_MINING.getCooldown() * Misc.TICK_CONVERSION_FACTOR);
     }
 
     /**
@@ -267,7 +260,7 @@ public class MiningManager extends SkillManager {
 
         if (timeRemaining > 0) {
             //getPlayer().sendMessage(LocaleLoader.getString("Skills.TooTired", timeRemaining));
-            NotificationManager.sendPlayerInformation(getPlayer(), NotificationType.ABILITY_COOLDOWN, "Skills.TooTired", String.valueOf("timeRemaining"));
+            NotificationManager.sendPlayerInformation(getPlayer(), NotificationType.ABILITY_COOLDOWN, "Skills.TooTired", String.valueOf(timeRemaining));
             return false;
         }
 

@@ -11,6 +11,7 @@ import com.gmail.nossr50.events.skills.abilities.McMMOPlayerAbilityActivateEvent
 import com.gmail.nossr50.mcMMO;
 import com.gmail.nossr50.util.player.UserManager;
 import com.gmail.nossr50.util.scoreboards.ScoreboardManager;
+import com.gmail.nossr50.util.skills.RankUtils;
 import com.gmail.nossr50.worldguard.WorldGuardManager;
 import com.gmail.nossr50.worldguard.WorldGuardUtils;
 import org.bukkit.entity.Player;
@@ -40,6 +41,9 @@ public class SelfListener implements Listener {
             UserManager.getPlayer(player).processUnlockNotifications(plugin, event.getSkill(), previousLevelGained);
         }
 
+        //Reset the delay timer
+        RankUtils.resetUnlockDelayTimer();
+
         if(Config.getInstance().getScoreboardsEnabled())
             ScoreboardManager.handleLevelUp(player, skill);
 
@@ -47,9 +51,9 @@ public class SelfListener implements Listener {
             return;
         }
 
-        if ((event.getSkillLevel() % Config.getInstance().getLevelUpEffectsTier()) == 0) {
+        /*if ((event.getSkillLevel() % Config.getInstance().getLevelUpEffectsTier()) == 0) {
             skill.celebrateLevelUp(player);
-        }
+        }*/
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -91,6 +95,19 @@ public class SelfListener implements Listener {
             return;
         }
 
+        if(ExperienceConfig.getInstance().isEarlyGameBoostEnabled())
+        {
+
+            int earlyGameBonusXP = 0;
+
+            //Give some bonus XP for low levels
+            if(mcMMOPlayer.getSkillLevel(primarySkillType) <= mcMMO.getPlayerLevelUtils().getEarlyGameCutoff(primarySkillType))
+            {
+                earlyGameBonusXP += (mcMMOPlayer.getXpToLevel(primarySkillType) * 0.05);
+                event.setRawXpGained(event.getRawXpGained() + earlyGameBonusXP);
+            }
+        }
+
         int threshold = ExperienceConfig.getInstance().getDiminishedReturnsThreshold(primarySkillType);
 
         if (threshold <= 0 || !ExperienceConfig.getInstance().getDiminishedReturnsEnabled()) {
@@ -98,8 +115,7 @@ public class SelfListener implements Listener {
             return;
         }
 
-        final float rawXp = event.getRawXpGained();
-        if (rawXp < 0) {
+        if (event.getRawXpGained() <= 0) {
             // Don't calculate for XP subtraction
             return;
         }
@@ -107,6 +123,8 @@ public class SelfListener implements Listener {
         if (primarySkillType.isChildSkill()) {
             return;
         }
+
+        final float rawXp = event.getRawXpGained();
 
         float guaranteedMinimum = ExperienceConfig.getInstance().getDiminishedReturnsCap() * rawXp;
 

@@ -101,10 +101,16 @@ public final class Permissions {
     public static boolean mcpurge(Permissible permissible) { return permissible.hasPermission("mcmmo.commands.mcpurge"); }
     public static boolean mcremove(Permissible permissible) { return permissible.hasPermission("mcmmo.commands.mcremove"); }
     public static boolean mmoupdate(Permissible permissible) { return permissible.hasPermission("mcmmo.commands.mmoupdate"); }
+    public static boolean reloadlocale(Permissible permissible) { return permissible.hasPermission("mcmmo.commands.reloadlocale"); }
 
     /*
      * PERKS
      */
+
+    /* BYPASS PERKS */
+
+    public static boolean hasRepairEnchantBypassPerk(Permissible permissible) { return permissible.hasPermission("mcmmo.perks.bypass.repairenchant"); }
+    public static boolean hasSalvageEnchantBypassPerk(Permissible permissible) { return permissible.hasPermission("mcmmo.perks.bypass.salvageenchant"); }
 
     public static boolean lucky(Permissible permissible, PrimarySkillType skill) { return permissible.hasPermission("mcmmo.perks.lucky." + skill.toString().toLowerCase()); }
 

@@ -16,6 +16,7 @@ import java.util.HashMap;
 
 public class RankUtils {
     private static HashMap<String, HashMap<Integer, Integer>> subSkillRanks;
+    private static int count = 0;
 
     /**
      *
@@ -26,8 +27,6 @@ public class RankUtils {
      */
     public static void executeSkillUnlockNotifications(Plugin plugin, McMMOPlayer mcMMOPlayer, PrimarySkillType primarySkillType, int newLevel)
     {
-        int count = 0;
-
         for(SubSkillType subSkillType : primarySkillType.getSkillAbilities())
         {
             int playerRankInSkill = getRank(mcMMOPlayer.getPlayer(), subSkillType);
@@ -36,18 +35,23 @@ public class RankUtils {
 
             //If the skill doesn't have registered ranks gtfo
             if(innerMap == null || innerMap.get(playerRankInSkill) == null)
-                return;
+                continue;
 
             //The players level is the exact level requirement for this skill
             if(newLevel == innerMap.get(playerRankInSkill))
             {
                 SkillUnlockNotificationTask skillUnlockNotificationTask = new SkillUnlockNotificationTask(mcMMOPlayer, subSkillType, newLevel);
 
-                skillUnlockNotificationTask.runTaskLater(plugin, ((count * 4) + 1) * 20);
+                skillUnlockNotificationTask.runTaskLater(plugin, (count * 100));
 
                 count++;
             }
         }
+    }
+
+    public static void resetUnlockDelayTimer()
+    {
+        count = 0;
     }
 
     /* NEW SYSTEM */
@@ -168,6 +172,9 @@ public class RankUtils {
         //Get our rank map
         HashMap<Integer, Integer> rankMap = subSkillRanks.get(skillName);
 
+        if(UserManager.getPlayer(player) == null)
+            return 0;
+
         //Skill level of parent skill
         int currentSkillLevel = UserManager.getPlayer(player).getSkillLevel(subSkillType.getParentSkill());
 
@@ -211,6 +218,9 @@ public class RankUtils {
 
         //Get our rank map
         HashMap<Integer, Integer> rankMap = subSkillRanks.get(skillName);
+
+        if(UserManager.getPlayer(player) == null)
+            return 0;
 
         //Skill level of parent skill
         int currentSkillLevel = UserManager.getPlayer(player).getSkillLevel(abstractSubSkill.getPrimarySkill());

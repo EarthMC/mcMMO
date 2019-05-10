@@ -17,6 +17,7 @@
 Metrics:
     bstats: true
 Feedback:
+    PlayerTips: true
     SkillCommand:
         BlankLinesAboveHeader: true
     # If sendtitles is true messages will be sent using the title api (BIG TEXT ON SCREEN)
@@ -271,6 +272,7 @@ Skills:
     ###
     Mining:
         DoubleDrops:
+            SilkTouch: true
             # ChanceMax: Maximum chance of receiving double drops when on <MaxBonusLevel> or higher
             # MaxBonusLevel: Level when <ChanceMax> of receiving double drops is reached
             ChanceMax: 100.0
@@ -409,14 +411,6 @@ Skills:
     #  Settings for Smelting
     ###
     Smelting:
-        FuelEfficiency:
-            # Multiplier: The furnace burn time will be multiplied by this value.
-            # MaxBonusLevel: On this level, the efficiency multiplier will stop increasing
-            Multiplier: 3.0
-            MaxBonusLevel:
-                Standard: 100
-                RetroMode: 1000
-
         SecondSmelt:
             # ChanceMax: Maximum chance of triggering Second Smelt
             # MaxBonusLevel: On this level, the chance to cause Second Smelt will be <ChanceMax>

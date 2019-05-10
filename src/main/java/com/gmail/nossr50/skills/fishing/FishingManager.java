@@ -15,6 +15,8 @@ import com.gmail.nossr50.datatypes.treasure.Rarity;
 import com.gmail.nossr50.datatypes.treasure.ShakeTreasure;
 import com.gmail.nossr50.events.skills.fishing.McMMOPlayerFishingTreasureEvent;
 import com.gmail.nossr50.events.skills.fishing.McMMOPlayerShakeEvent;
+import com.gmail.nossr50.locale.LocaleLoader;
+import com.gmail.nossr50.mcMMO;
 import com.gmail.nossr50.skills.SkillManager;
 import com.gmail.nossr50.util.*;
 import com.gmail.nossr50.util.player.NotificationManager;
@@ -23,6 +25,8 @@ import com.gmail.nossr50.util.random.RandomChanceUtil;
 import com.gmail.nossr50.util.skills.CombatUtils;
 import com.gmail.nossr50.util.skills.RankUtils;
 import com.gmail.nossr50.util.skills.SkillUtils;
+import com.gmail.nossr50.util.sounds.SoundManager;
+import com.gmail.nossr50.util.sounds.SoundType;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -34,16 +38,24 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 
 import java.util.*;
 
 public class FishingManager extends SkillManager {
+    public static final int FISHING_ROD_CAST_CD_MILLISECONDS = 100;
+    public static final int OVERFISH_LIMIT = 4;
     private final long FISHING_COOLDOWN_SECONDS = 1000L;
 
-    private long fishingTimestamp = 0L;
+    private long fishingRodCastTimestamp = 0L;
+    private long fishHookSpawnTimestamp = 0L;
+    private long lastWarned = 0L;
+    private long lastWarnedExhaust = 0L;
+    private FishHook fishHookReference;
     private BoundingBox lastFishingBoundingBox;
     private Item fishingCatch;
     private Location hookLocation;
+    private int fishCaughtCounter = 1;
 
     public FishingManager(McMMOPlayer mcMMOPlayer) {
         super(mcMMOPlayer, PrimarySkillType.FISHING);
@@ -57,25 +69,88 @@ public class FishingManager extends SkillManager {
         return getSkillLevel() >= RankUtils.getUnlockLevel(SubSkillType.FISHING_MASTER_ANGLER) && Permissions.isSubSkillEnabled(getPlayer(), SubSkillType.FISHING_MASTER_ANGLER);
     }
 
-    public boolean exploitPrevention(BoundingBox boundingBox) {
+    public void setFishingRodCastTimestamp()
+    {
+        long currentTime = System.currentTimeMillis();
+        //Only track spam casting if the fishing hook is fresh
+        if(currentTime > fishHookSpawnTimestamp + 1000)
+            return;
 
-        Block targetBlock = getPlayer().getTargetBlock(BlockUtils.getTransparentBlocks(), 100);
+        if(currentTime < fishingRodCastTimestamp + FISHING_ROD_CAST_CD_MILLISECONDS)
+        {
+            getPlayer().setFoodLevel(Math.max(getPlayer().getFoodLevel() - 1, 0));
+            getPlayer().getInventory().getItemInMainHand().setDurability((short) (getPlayer().getInventory().getItemInMainHand().getDurability() + 5));
+            getPlayer().updateInventory();
+
+            if(lastWarnedExhaust + (1000 * 1) < currentTime)
+            {
+                getPlayer().sendMessage(LocaleLoader.getString("Fishing.Exhausting"));
+                lastWarnedExhaust = currentTime;
+                SoundManager.sendSound(getPlayer(), getPlayer().getLocation(), SoundType.TIRED);
+            }
+        }
+
+        fishingRodCastTimestamp = System.currentTimeMillis();
+    }
+
+    public void setFishHookReference(FishHook fishHook)
+    {
+        if(fishHook.getMetadata(mcMMO.FISH_HOOK_REF_METAKEY).size() > 0)
+            return;
+
+        fishHook.setMetadata(mcMMO.FISH_HOOK_REF_METAKEY, mcMMO.metadataValue);
+        this.fishHookReference = fishHook;
+        fishHookSpawnTimestamp = System.currentTimeMillis();
+        fishingRodCastTimestamp = System.currentTimeMillis();
+
+    }
+
+    public boolean isFishingTooOften()
+    {
+        long currentTime = System.currentTimeMillis();
+        long fishHookSpawnCD = fishHookSpawnTimestamp + 1000;
+        boolean hasFished = (currentTime < fishHookSpawnCD);
+
+        if(hasFished && (lastWarned + (1000 * 1) < currentTime))
+        {
+            getPlayer().sendMessage(LocaleLoader.getString("Fishing.Scared"));
+            lastWarned = System.currentTimeMillis();
+        }
+
+        return hasFished;
+    }
+
+    public boolean isExploitingFishing(Vector centerOfCastVector) {
+
+        /*Block targetBlock = getPlayer().getTargetBlock(BlockUtils.getTransparentBlocks(), 100);
 
         if (!targetBlock.isLiquid()) {
             return false;
+        }*/
+
+        BoundingBox newCastBoundingBox = makeBoundingBox(centerOfCastVector);
+
+        boolean sameTarget = lastFishingBoundingBox != null && lastFishingBoundingBox.overlaps(newCastBoundingBox);
+
+        if(sameTarget)
+            fishCaughtCounter++;
+        else
+            fishCaughtCounter = 1;
+
+        if(fishCaughtCounter + 1 == OVERFISH_LIMIT)
+        {
+            getPlayer().sendMessage(LocaleLoader.getString("Fishing.LowResources"));
         }
 
-        long currentTime = System.currentTimeMillis();
-        boolean hasFished = (currentTime < fishingTimestamp + (FISHING_COOLDOWN_SECONDS * 10));
+        //If the new bounding box does not intersect with the old one, then update our bounding box reference
+        if(!sameTarget)
+            lastFishingBoundingBox = newCastBoundingBox;
 
-        if(hasFished)
-            fishingTimestamp = currentTime;
+        return sameTarget && fishCaughtCounter >= OVERFISH_LIMIT;
+    }
 
-        boolean sameTarget = (lastFishingBoundingBox != null && lastFishingBoundingBox.overlaps(boundingBox));
-
-        lastFishingBoundingBox = boundingBox;
-
-        return hasFished || sameTarget;
+    public static BoundingBox makeBoundingBox(Vector centerOfCastVector) {
+        return BoundingBox.of(centerOfCastVector, 1, 1, 1);
     }
 
     public void setFishingTarget() {
@@ -134,12 +209,11 @@ public class FishingManager extends SkillManager {
     /**
      * Handle the Fisherman's Diet ability
      *
-     * @param rankChange     The # of levels to change rank for the food
      * @param eventFoodLevel The initial change in hunger from the event
      *
      * @return the modified change in hunger for the event
      */
-    public int handleFishermanDiet(int rankChange, int eventFoodLevel) {
+    public int handleFishermanDiet(int eventFoodLevel) {
         return SkillUtils.handleFoodSkills(getPlayer(), eventFoodLevel, SubSkillType.FISHING_FISHERMANS_DIET);
     }
 
@@ -346,7 +420,7 @@ public class FishingManager extends SkillManager {
             }
 
             Misc.dropItem(target.getLocation(), drop);
-            CombatUtils.dealDamage(target, Math.max(target.getMaxHealth() / 4, 1), EntityDamageEvent.DamageCause.CUSTOM, getPlayer()); // Make it so you can shake a mob no more than 4 times.
+            CombatUtils.dealDamage(target, Math.min(Math.max(target.getMaxHealth() / 4, 1), 10), EntityDamageEvent.DamageCause.CUSTOM, getPlayer()); // Make it so you can shake a mob no more than 4 times.
             applyXpGain(ExperienceConfig.getInstance().getFishingShakeXP(), XPGainReason.PVE);
         }
     }

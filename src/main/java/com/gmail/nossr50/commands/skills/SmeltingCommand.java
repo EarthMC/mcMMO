@@ -3,7 +3,6 @@ package com.gmail.nossr50.commands.skills;
 import com.gmail.nossr50.datatypes.skills.PrimarySkillType;
 import com.gmail.nossr50.datatypes.skills.SubSkillType;
 import com.gmail.nossr50.locale.LocaleLoader;
-import com.gmail.nossr50.skills.smelting.Smelting;
 import com.gmail.nossr50.util.Permissions;
 import com.gmail.nossr50.util.TextComponentFactory;
 import com.gmail.nossr50.util.player.UserManager;
@@ -35,7 +34,7 @@ public class SmeltingCommand extends SkillCommand {
     protected void dataCalculations(Player player, float skillValue) {
         // FUEL EFFICIENCY
         if (canFuelEfficiency) {
-            burnTimeModifier = decimal.format(1 + ((skillValue / Smelting.burnModifierMaxLevel) * Smelting.burnTimeMultiplier));
+            burnTimeModifier = String.valueOf(UserManager.getPlayer(player).getSmeltingManager().getFuelEfficiencyMultiplier());
         }
 
         // FLUX MINING
@@ -57,7 +56,7 @@ public class SmeltingCommand extends SkillCommand {
     protected void permissionsCheck(Player player) {
         canFuelEfficiency = canUseSubskill(player, SubSkillType.SMELTING_FUEL_EFFICIENCY);
         canSecondSmelt = canUseSubskill(player, SubSkillType.SMELTING_SECOND_SMELT);
-        canFluxMine = canUseSubskill(player, SubSkillType.SMELTING_FLUX_MINING);
+        //canFluxMine = canUseSubskill(player, SubSkillType.SMELTING_FLUX_MINING);
         canUnderstandTheArt = Permissions.vanillaXpBoost(player, skill) && RankUtils.hasUnlockedSubskill(player, SubSkillType.SMELTING_UNDERSTANDING_THE_ART);
     }
 

@@ -168,6 +168,10 @@ commands:
         aliases: [macho, jumping, throwing, wrecking, crafting, walking, swimming, falling, climbing, flying, diving, piggy]
         description: Deploy jokes
         permission: mcmmo.commands.mcfools
+    mcmmoreloadlocale:
+        aliases: [mcreloadlocale]
+        description: Reloads locale
+        permission: mcmmo.commands.reloadlocale
 permissions:
     mcmmo.*:
         default: false
@@ -247,12 +251,15 @@ permissions:
         children:
             mcmmo.ability.archery.skillshot: true
             mcmmo.ability.archery.daze: true
-            mcmmo.ability.archery.retrieve: true
+            mcmmo.ability.archery.arrowretrieval: true
+            mcmmo.ability.archery.archerylimitbreak: true
+    mcmmo.ability.archery.archerylimitbreak:
+        description: Adds damage to bows and crossbows
     mcmmo.ability.archery.skillshot:
         description: Allows bonus damage from the Archery SkillShot ability
     mcmmo.ability.archery.daze:
         description: Allows access to the Daze ability
-    mcmmo.ability.archery.retrieve:
+    mcmmo.ability.archery.arrowretrieval:
         description: Allows tracking & retrieval of arrows
     mcmmo.ability.axes.*:
         default: false
@@ -267,6 +274,9 @@ permissions:
             mcmmo.ability.axes.greaterimpact: true
             mcmmo.ability.axes.armorimpact: true
             mcmmo.ability.axes.skullsplitter: true
+            mcmmo.ability.axes.axeslimitbreak: true
+    mcmmo.ability.axes.axeslimitbreak:
+        description: Adds damage to axes
     mcmmo.ability.axes.axemastery:
         description: Allows bonus damage from Axes
     mcmmo.ability.axes.criticalhit:
@@ -561,8 +571,14 @@ permissions:
         description: Allows access to all Swords abilities
         children:
             mcmmo.ability.swords.rupture: true
+            mcmmo.ability.swords.stab: true
             mcmmo.ability.swords.counterattack: true
             mcmmo.ability.swords.serratedstrikes: true
+            mcmmo.ability.swords.swordslimitbreak: true
+    mcmmo.ability.swords.stab:
+        description: Adds damage to swords
+    mcmmo.ability.swords.swordslimitbreak:
+        description: Adds damagee to swords
     mcmmo.ability.swords.rupture:
         description: Allows access to the Bleed ability
     mcmmo.ability.swords.counterattack:
@@ -639,6 +655,9 @@ permissions:
             mcmmo.ability.unarmed.arrowdeflect: true
             mcmmo.ability.unarmed.disarm: true
             mcmmo.ability.unarmed.irongrip: true
+            mcmmo.ability.unarmed.unarmedlimitbreak: true
+    mcmmo.ability.unarmed.unarmedlimitbreak:
+        description: Adds damage to unarmed attacks
     mcmmo.ability.unarmed.berserk:
         description: Allows access to the Berserker ability
     mcmmo.ability.unarmed.blockcracker:
@@ -792,6 +811,7 @@ permissions:
             mcmmo.commands.mmoedit.others: true
             mcmmo.commands.mmoshowdb: true
             mcmmo.commands.ptp.world.all: true
+            mcmmo.commands.reloadlocale: true
             mcmmo.commands.skillreset.all: true
             mcmmo.commands.vampirism.all: true
             mcmmo.commands.xprate.all: true
@@ -1313,6 +1333,8 @@ permissions:
         default: false
         description: implies access to all mcmmo perks
         children:
+            mcmmo.perks.bypass.salvageenchant: true
+            mcmmo.perks.bypass.repairenchant: true
             mcmmo.perks.activationtime.all: true
             mcmmo.perks.cooldowns.all: true
             mcmmo.perks.lucky.all: true
@@ -1329,6 +1351,23 @@ permissions:
             mcmmo.perks.activationtime.eightseconds: true
             mcmmo.perks.activationtime.fourseconds: true
             mcmmo.perks.activationtime.twelveseconds: true
+    mcmmo.perks.bypass.*:
+        default: false
+        description: Perks that bypass certain RNG elements and guarantee success
+        children:
+            mcmmo.perks.bypass.all: true
+    mcmmo.perks.bypass.all:
+        default: false
+        description: Perks that bypass certain RNG elements and guarantee success
+        children:
+            mcmmo.perks.bypass.repairenchant: true
+            mcmmo.perks.bypass.salvageenchant: true
+    mcmmo.perks.bypass.repairenchant:
+        default: false
+        description: Guarantees repairing without enchantment degradation
+    mcmmo.perks.bypass.salvageenchant:
+        default: false
+        description: Guarantees salvage will return the best legal enchantment book
     mcmmo.perks.activationtime.eightseconds:
         default: false
         description: Increases activation time by 8 seconds

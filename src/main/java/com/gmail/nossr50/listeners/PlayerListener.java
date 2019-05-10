@@ -29,14 +29,18 @@ import com.gmail.nossr50.util.sounds.SoundManager;
 import com.gmail.nossr50.util.sounds.SoundType;
 import com.gmail.nossr50.worldguard.WorldGuardManager;
 import com.gmail.nossr50.worldguard.WorldGuardUtils;
+import com.gmail.nossr50.events.fake.FakePlayerAnimationEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.*;
+import org.bukkit.entity.minecart.PoweredMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
@@ -75,6 +79,12 @@ public class PlayerListener implements Listener {
         }
 
         if (!UserManager.hasPlayerDataKey(player) || Config.getInstance().getXPAfterTeleportCooldown() <= 0 || event.getFrom().equals(event.getTo())) {
+            return;
+        }
+
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
             return;
         }
 
@@ -183,6 +193,12 @@ public class PlayerListener implements Listener {
             return;
         }
 
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
+
         McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
 
         mcMMOPlayer.checkGodMode();
@@ -245,6 +261,12 @@ public class PlayerListener implements Listener {
         }
 
         if (!UserManager.hasPlayerDataKey(player) || !PrimarySkillType.FISHING.getPermissions(player)) {
+            return;
+        }
+
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
             return;
         }
 
@@ -319,10 +341,37 @@ public class PlayerListener implements Listener {
             return;
         }
 
-        FishingManager fishingManager = UserManager.getPlayer(player).getFishingManager();
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
 
         Entity caught = event.getCaught();
-        //event.setExpToDrop(event.getExpToDrop()); //Redundant?
+        FishingManager fishingManager = UserManager.getPlayer(player).getFishingManager();
+
+        //Track the hook
+        if(ExperienceConfig.getInstance().isFishingExploitingPrevented())
+        {
+            if(event.getHook().getMetadata(mcMMO.FISH_HOOK_REF_METAKEY).size() == 0)
+            {
+                fishingManager.setFishHookReference(event.getHook());
+            }
+
+            //Spam Fishing
+            if(event.getState() == PlayerFishEvent.State.CAUGHT_FISH && fishingManager.isFishingTooOften())
+            {
+                event.setExpToDrop(0);
+
+                if(caught instanceof Item)
+                {
+                    Item caughtItem = (Item) caught;
+                    caughtItem.remove();
+                }
+
+                return;
+            }
+        }
 
         switch (event.getState()) {
             case FISHING:
@@ -331,21 +380,29 @@ public class PlayerListener implements Listener {
                     fishingManager.setFishingTarget();
                 }
                 return;
-
             case CAUGHT_FISH:
-                if(fishingManager.exploitPrevention(event.getHook().getBoundingBox()))
-                    return;
+                if(ExperienceConfig.getInstance().isFishingExploitingPrevented())
+                {
+                    if(fishingManager.isExploitingFishing(event.getHook().getLocation().toVector()))
+                    {
+                        player.sendMessage(LocaleLoader.getString("Fishing.Scarcity"));
+                        event.setExpToDrop(0);
+                        Item caughtItem = (Item) caught;
+                        caughtItem.remove();
+                        return;
+                    }
+                }
+
                 fishingManager.handleFishing((Item) caught);
                 fishingManager.setFishingTarget();
+                //fishingManager.setFishHookReference(null);
                 return;
-
             case CAUGHT_ENTITY:
                 if (fishingManager.canShake(caught)) {
                     fishingManager.shakeCheck((LivingEntity) caught);
                     fishingManager.setFishingTarget();
                 }
                 return;
-
             default:
                 return;
         }
@@ -377,6 +434,12 @@ public class PlayerListener implements Listener {
             }
 
             if (!UserManager.hasPlayerDataKey(player)) {
+                return;
+            }
+
+            //Profile not loaded
+            if(UserManager.getPlayer(player) == null)
+            {
                 return;
             }
 
@@ -432,6 +495,12 @@ public class PlayerListener implements Listener {
             return;
         }
 
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
+
         McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
         mcMMOPlayer.logout(false);
     }
@@ -453,7 +522,8 @@ public class PlayerListener implements Listener {
             return;
         }
 
-        new PlayerProfileLoadingTask(player).runTaskLaterAsynchronously(mcMMO.p, 1); // 1 Tick delay to ensure the player is marked as online before we begin loading
+        //Delay loading for 3 seconds in case the player has a save task running, its hacky but it should do the trick
+        new PlayerProfileLoadingTask(player).runTaskLaterAsynchronously(mcMMO.p, 60);
 
         if (Config.getInstance().getMOTDEnabled() && Permissions.motd(player)) {
             Motd.displayAll(player);
@@ -481,6 +551,12 @@ public class PlayerListener implements Listener {
             return;
         }
 
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
+
         UserManager.getPlayer(player).actualizeRespawnATS();
     }
 
@@ -505,6 +581,12 @@ public class PlayerListener implements Listener {
         }
 
         if (event.getHand() != EquipmentSlot.HAND || !UserManager.hasPlayerDataKey(player) || player.getGameMode() == GameMode.CREATIVE) {
+            return;
+        }
+
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
             return;
         }
 
@@ -611,8 +693,29 @@ public class PlayerListener implements Listener {
             return;
         }
 
+        //Profile not loaded
+        if(UserManager.getPlayer(player) == null)
+        {
+            return;
+        }
+
         McMMOPlayer mcMMOPlayer = UserManager.getPlayer(player);
         ItemStack heldItem = player.getInventory().getItemInMainHand();
+
+        //Spam Fishing Detection
+        if(event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR)
+        {
+            if(heldItem.getType() == Material.FISHING_ROD || player.getInventory().getItemInOffHand().getType() == Material.FISHING_ROD)
+            {
+                if(player.isInsideVehicle() && (player.getVehicle() instanceof Minecart || player.getVehicle() instanceof PoweredMinecart))
+                {
+                    player.getVehicle().eject();
+                    player.setVelocity(player.getEyeLocation().getDirection().multiply(10));
+                }
+
+                mcMMOPlayer.getFishingManager().setFishingRodCastTimestamp();
+            }
+        }
 
         switch (event.getAction()) {
             case RIGHT_CLICK_BLOCK:
@@ -656,16 +759,17 @@ public class PlayerListener implements Listener {
                     }
                 }
 
+                FakePlayerAnimationEvent fakeSwing = new FakePlayerAnimationEvent(event.getPlayer()); //PlayerAnimationEvent compat        
                 if (herbalismManager.canGreenThumbBlock(blockState)) {
+                    Bukkit.getPluginManager().callEvent(fakeSwing);
                     player.getInventory().setItemInMainHand(new ItemStack(Material.WHEAT_SEEDS, heldItem.getAmount() - 1));
-
                     if (herbalismManager.processGreenThumbBlocks(blockState) && EventUtils.simulateBlockBreak(block, player, false)) {
                         blockState.update(true);
                     }
                 }
-
                 /* SHROOM THUMB CHECK */
                 else if (herbalismManager.canUseShroomThumb(blockState)) {
+                    Bukkit.getPluginManager().callEvent(fakeSwing);
                     event.setCancelled(true);
                     if (herbalismManager.processShroomThumb(blockState) && EventUtils.simulateBlockBreak(block, player, false)) {
                         blockState.update(true);
